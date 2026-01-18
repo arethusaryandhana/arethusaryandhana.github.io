@@ -1,96 +1,196 @@
-import { useEffect, useMemo, useRef, useState } from "react"
-import { Link, Route, Routes, useLocation, useNavigate } from "react-router-dom"
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
-import { useTheme } from "./hooks/useTheme"
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Link,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useTheme } from "./hooks/useTheme";
 
-type SectionKey = "top" | "projects" | "experience" | "skills" | "certificates" | "education" | "contact" | "social"
+type SectionKey =
+  | "top"
+  | "projects"
+  | "experience"
+  | "skills"
+  | "certificates"
+  | "education"
+  | "contact"
+  | "social";
 
 type SectionDef = {
-  key: SectionKey
-  path: string
-  id: string
-  label: string
-  title: string
-}
+  key: SectionKey;
+  path: string;
+  id: string;
+  label: string;
+  title: string;
+};
 
 const sections: SectionDef[] = [
-  { key: "top", path: "/", id: "top", label: "Home", title: "Arethusa Aryandhana | Full‑Stack Developer" },
-  { key: "projects", path: "/projects", id: "projects", label: "Projects", title: "Projects | Arethusa Aryandhana" },
-  { key: "experience", path: "/experience", id: "experience", label: "Experience", title: "Experience | Arethusa Aryandhana" },
-  { key: "skills", path: "/skills", id: "skills", label: "Skills", title: "Skills | Arethusa Aryandhana" },
-  { key: "certificates", path: "/certificates", id: "certificates", label: "Certificates", title: "Certificates | Arethusa Aryandhana" },
-  { key: "education", path: "/education", id: "education", label: "Education", title: "Education | Arethusa Aryandhana" },
-  { key: "contact", path: "/contact-person", id: "contact", label: "Contact", title: "Contact | Arethusa Aryandhana" },
-  { key: "social", path: "/social-media", id: "social", label: "Social", title: "Social | Arethusa Aryandhana" },
-]
+  {
+    key: "top",
+    path: "/",
+    id: "top",
+    label: "Home",
+    title: "Arethusa Aryandhana | Full‑Stack Developer",
+  },
+  {
+    key: "projects",
+    path: "/projects",
+    id: "projects",
+    label: "Projects",
+    title: "Projects | Arethusa Aryandhana",
+  },
+  {
+    key: "experience",
+    path: "/experience",
+    id: "experience",
+    label: "Experience",
+    title: "Experience | Arethusa Aryandhana",
+  },
+  {
+    key: "skills",
+    path: "/skills",
+    id: "skills",
+    label: "Skills",
+    title: "Skills | Arethusa Aryandhana",
+  },
+  {
+    key: "certificates",
+    path: "/certificates",
+    id: "certificates",
+    label: "Certificates",
+    title: "Certificates | Arethusa Aryandhana",
+  },
+  {
+    key: "education",
+    path: "/education",
+    id: "education",
+    label: "Education",
+    title: "Education | Arethusa Aryandhana",
+  },
+  {
+    key: "contact",
+    path: "/contact-person",
+    id: "contact",
+    label: "Contact",
+    title: "Contact | Arethusa Aryandhana",
+  },
+  {
+    key: "social",
+    path: "/social-media",
+    id: "social",
+    label: "Social",
+    title: "Social | Arethusa Aryandhana",
+  },
+];
 
-const byPath = new Map(sections.map((s) => [s.path, s]))
+const byPath = new Map(sections.map((s) => [s.path, s]));
 
 function useActiveSection({ rootId }: { rootId: string }) {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const reduced = useReducedMotion()
+  const location = useLocation();
+  const [activeId, setActiveId] = useState<string>(
+    () => (byPath.get(location.pathname) ?? byPath.get("/"))!.id,
+  );
 
-  const ignoreNextObserverRef = useRef(false)
-  const [activeId, setActiveId] = useState<string>(() => (byPath.get(location.pathname) ?? byPath.get("/"))!.id)
+  // Track if we're programmatically scrolling (from navigation click)
+  const isNavigatingRef = useRef(false);
 
+  // Handle route changes (from navigation clicks or browser back/forward)
   useEffect(() => {
-    const def = byPath.get(location.pathname) ?? byPath.get("/")
-    if (!def) return
+    const def = byPath.get(location.pathname) ?? byPath.get("/");
+    if (!def) return;
 
-    document.title = def.title
+    document.title = def.title;
+    setActiveId(def.id);
 
-    const el = document.getElementById(def.id)
-    if (!el) return
+    const el = document.getElementById(def.id);
+    if (!el) return;
 
-    ignoreNextObserverRef.current = true
-    el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" })
-    window.setTimeout(() => {
-      ignoreNextObserverRef.current = false
-    }, reduced ? 0 : 450)
-  }, [location.pathname, reduced])
+    // Scroll to the section smoothly
+    isNavigatingRef.current = true;
+    el.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
 
+    // Reset the flag after scroll animation completes
+    const timeout = window.setTimeout(() => {
+      isNavigatingRef.current = false;
+    }, 1000);
+
+    return () => window.clearTimeout(timeout);
+  }, [location.pathname]);
+
+  // Track active section during manual scroll
   useEffect(() => {
-    const root = document.getElementById(rootId)
-    if (!root) return
+    const root = document.getElementById(rootId);
+    if (!root) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (ignoreNextObserverRef.current) return
+    let rafId: number;
+    let lastScrollTime = 0;
 
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => (b.intersectionRatio ?? 0) - (a.intersectionRatio ?? 0))[0]
+    const handleScroll = () => {
+      // Skip if we're currently navigating programmatically
+      if (isNavigatingRef.current) return;
 
-        if (!visible) return
-        const id = (visible.target as HTMLElement).id
-        if (!id || id === activeId) return
+      const now = Date.now();
+      // Throttle to every 100ms
+      if (now - lastScrollTime < 100) return;
+      lastScrollTime = now;
 
-        setActiveId(id)
-        const def = sections.find((s) => s.id === id)
-        if (!def) return
-        if (def.path !== location.pathname) navigate(def.path, { replace: true })
-      },
-      { root, threshold: [0.55, 0.7, 0.85] },
-    )
+      // Cancel any pending animation frame
+      if (rafId) cancelAnimationFrame(rafId);
 
-    for (const s of sections) {
-      const el = document.getElementById(s.id)
-      if (el) observer.observe(el)
-    }
+      rafId = requestAnimationFrame(() => {
+        const scrollTop = root.scrollTop;
+        const viewportHeight = root.clientHeight;
+        const scrollCenter = scrollTop + viewportHeight / 2;
 
-    return () => observer.disconnect()
-  }, [activeId, location.pathname, navigate, rootId])
+        // Find which section is currently in view
+        let currentSection: SectionDef | null = null;
+        let minDistance = Infinity;
 
-  return { activeId }
+        for (const section of sections) {
+          const el = document.getElementById(section.id);
+          if (!el) continue;
+
+          const rect = el.getBoundingClientRect();
+          const elTop = rect.top + scrollTop;
+          const elCenter = elTop + rect.height / 2;
+          const distance = Math.abs(scrollCenter - elCenter);
+
+          if (distance < minDistance) {
+            minDistance = distance;
+            currentSection = section;
+          }
+        }
+
+        if (currentSection && currentSection.id !== activeId) {
+          setActiveId(currentSection.id);
+        }
+      });
+    };
+
+    root.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      root.removeEventListener("scroll", handleScroll);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [rootId, activeId]);
+
+  return { activeId };
 }
 
 function Header({ activeId }: { activeId: string }) {
-  const { mode, resolvedMode, setMode } = useTheme()
+  const { mode, resolvedMode, setMode } = useTheme();
 
   function cycleTheme() {
-    const next = mode === "system" ? "light" : mode === "light" ? "dark" : "system"
-    setMode(next)
+    const next =
+      mode === "system" ? "light" : mode === "light" ? "dark" : "system";
+    setMode(next);
   }
 
   return (
@@ -98,7 +198,9 @@ function Header({ activeId }: { activeId: string }) {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <Link to="/" className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-accent-500" />
-          <span className="text-sm font-semibold tracking-wide text-zinc-900 dark:text-zinc-100">Arethusa</span>
+          <span className="text-sm font-semibold tracking-wide text-zinc-900 dark:text-zinc-100">
+            Arethusa
+          </span>
         </Link>
 
         <nav className="hidden items-center gap-4 text-sm text-zinc-700 sm:flex dark:text-zinc-200">
@@ -131,14 +233,20 @@ function Header({ activeId }: { activeId: string }) {
         </button>
       </div>
     </header>
-  )
+  );
 }
 
-function SectionShell({ id, children }: { id: string; children: React.ReactNode }) {
-  const reduced = useReducedMotion()
+function SectionShell({
+  id,
+  children,
+}: {
+  id: string;
+  children: React.ReactNode;
+}) {
+  const reduced = useReducedMotion();
 
   return (
-    <section id={id} className="snap-start snap-always min-h-dvh px-4 pb-16 pt-24">
+    <section id={id} className="snap-start min-h-dvh px-4 pb-16 pt-24">
       <div className="mx-auto flex min-h-[calc(100dvh-6rem-4rem)] max-w-6xl items-center">
         <motion.div
           initial={reduced ? false : { opacity: 0, y: 22, filter: "blur(6px)" }}
@@ -159,7 +267,7 @@ function SectionShell({ id, children }: { id: string; children: React.ReactNode 
         </motion.div>
       </div>
     </section>
-  )
+  );
 }
 
 function Pill({ children }: { children: React.ReactNode }) {
@@ -167,11 +275,11 @@ function Pill({ children }: { children: React.ReactNode }) {
     <span className="rounded-full border border-zinc-200/70 bg-white/70 px-3 py-1 text-xs text-zinc-700 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">
       {children}
     </span>
-  )
+  );
 }
 
 function MinimalGrid({ children }: { children: React.ReactNode }) {
-  return <div className="grid gap-4 md:grid-cols-3">{children}</div>
+  return <div className="grid gap-4 md:grid-cols-3">{children}</div>;
 }
 
 function Card({ children }: { children: React.ReactNode }) {
@@ -179,21 +287,24 @@ function Card({ children }: { children: React.ReactNode }) {
     <div className="rounded-2xl border border-zinc-200/70 bg-white/70 p-5 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-zinc-300 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:bg-white/10">
       {children}
     </div>
-  )
+  );
 }
 
 function HomePage() {
-  const reduced = useReducedMotion()
-  const { activeId } = useActiveSection({ rootId: "scroll-root" })
+  const reduced = useReducedMotion();
+  const { activeId } = useActiveSection({ rootId: "scroll-root" });
 
   const socials = useMemo(
     () => [
       { label: "GitHub", href: "https://github.com/arethusaryandhana" },
-      { label: "LinkedIn", href: "https://www.linkedin.com/in/arethusa-aryandhana/" },
+      {
+        label: "LinkedIn",
+        href: "https://www.linkedin.com/in/arethusa-aryandhana/",
+      },
       { label: "Email", href: "mailto:ryan.arethusa@gmail.com" },
     ],
     [],
-  )
+  );
 
   const projects = useMemo(
     () => [
@@ -217,7 +328,7 @@ function HomePage() {
       },
     ],
     [],
-  )
+  );
 
   const experience = useMemo(
     () => [
@@ -226,16 +337,31 @@ function HomePage() {
       { role: "Frontend", company: "PixelCraft", period: "2021—2022" },
     ],
     [],
-  )
+  );
 
   const certificates = useMemo(
     () => [
-      { title: "Full‑Stack Web Dev", issuer: "Coursera", year: "2024", href: "https://example.com/cert-1" },
-      { title: "Cloud Fundamentals", issuer: "GCP", year: "2023", href: "https://example.com/cert-2" },
-      { title: "System Design", issuer: "Udemy", year: "2022", href: "https://example.com/cert-3" },
+      {
+        title: "Full‑Stack Web Dev",
+        issuer: "Coursera",
+        year: "2024",
+        href: "https://example.com/cert-1",
+      },
+      {
+        title: "Cloud Fundamentals",
+        issuer: "GCP",
+        year: "2023",
+        href: "https://example.com/cert-2",
+      },
+      {
+        title: "System Design",
+        issuer: "Udemy",
+        year: "2022",
+        href: "https://example.com/cert-3",
+      },
     ],
     [],
-  )
+  );
 
   return (
     <div className="bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
@@ -251,13 +377,15 @@ function HomePage() {
       <main
         id="scroll-root"
         className="h-dvh snap-y snap-mandatory overflow-y-auto overscroll-contain"
-        style={{ scrollBehavior: reduced ? "auto" : "smooth" }}
+        style={{ scrollBehavior: "smooth" }}
       >
         <SectionShell id="top">
           <div className="grid items-center gap-10 md:grid-cols-[1.2fr_0.8fr]">
             <div>
               <Pill>Full‑Stack Developer</Pill>
-              <h1 className="mt-5 text-4xl font-semibold tracking-tight sm:text-5xl">Arethusa Aryandhana</h1>
+              <h1 className="mt-5 text-4xl font-semibold tracking-tight sm:text-5xl">
+                Arethusa Aryandhana
+              </h1>
 
               <div className="mt-5 flex flex-wrap gap-2">
                 <Pill>React</Pill>
@@ -341,15 +469,21 @@ function HomePage() {
 
         <SectionShell id="experience">
           <div>
-            <h2 className="text-3xl font-semibold tracking-tight">Experience</h2>
+            <h2 className="text-3xl font-semibold tracking-tight">
+              Experience
+            </h2>
             <div className="mt-6 grid gap-4">
               {experience.map((e) => (
                 <Card key={`${e.role}-${e.company}`}>
                   <div className="flex items-baseline justify-between gap-3">
                     <div className="text-sm font-semibold">{e.role}</div>
-                    <div className="text-xs text-zinc-500 dark:text-zinc-400">{e.period}</div>
+                    <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                      {e.period}
+                    </div>
                   </div>
-                  <div className="mt-2 text-sm text-zinc-700 dark:text-zinc-200">{e.company}</div>
+                  <div className="mt-2 text-sm text-zinc-700 dark:text-zinc-200">
+                    {e.company}
+                  </div>
                 </Card>
               ))}
             </div>
@@ -360,20 +494,29 @@ function HomePage() {
           <div>
             <h2 className="text-3xl font-semibold tracking-tight">Skills</h2>
             <div className="mt-6 flex flex-wrap gap-2">
-              {["React", "TypeScript", "Node.js", "PostgreSQL", "Docker"].map((t) => (
-                <Pill key={t}>{t}</Pill>
-              ))}
+              {["React", "TypeScript", "Node.js", "PostgreSQL", "Docker"].map(
+                (t) => (
+                  <Pill key={t}>{t}</Pill>
+                ),
+              )}
             </div>
           </div>
         </SectionShell>
 
         <SectionShell id="certificates">
           <div>
-            <h2 className="text-3xl font-semibold tracking-tight">Certificates</h2>
+            <h2 className="text-3xl font-semibold tracking-tight">
+              Certificates
+            </h2>
             <div className="mt-6">
               <MinimalGrid>
                 {certificates.map((c) => (
-                  <a key={c.title} href={c.href} target="_blank" rel="noreferrer">
+                  <a
+                    key={c.title}
+                    href={c.href}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
                     <Card>
                       <div className="text-sm font-semibold">{c.title}</div>
                       <div className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
@@ -392,8 +535,12 @@ function HomePage() {
             <h2 className="text-3xl font-semibold tracking-tight">Education</h2>
             <div className="mt-6 max-w-xl">
               <Card>
-                <div className="text-sm font-semibold">B.Sc. Computer Science</div>
-                <div className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Example University · 2019—2023</div>
+                <div className="text-sm font-semibold">
+                  B.Sc. Computer Science
+                </div>
+                <div className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                  Example University · 2019—2023
+                </div>
               </Card>
             </div>
           </div>
@@ -424,36 +571,42 @@ function HomePage() {
                     key={s.label}
                     href={s.href}
                     target={s.href.startsWith("mailto:") ? undefined : "_blank"}
-                    rel={s.href.startsWith("mailto:") ? undefined : "noreferrer"}
+                    rel={
+                      s.href.startsWith("mailto:") ? undefined : "noreferrer"
+                    }
                   >
                     <Card>
                       <div className="text-sm font-semibold">{s.label}</div>
-                      <div className="mt-2 break-all text-xs text-zinc-500 dark:text-zinc-400">{s.href}</div>
+                      <div className="mt-2 break-all text-xs text-zinc-500 dark:text-zinc-400">
+                        {s.href}
+                      </div>
                     </Card>
                   </a>
                 ))}
               </MinimalGrid>
             </div>
 
-            <div className="mt-10 text-xs text-zinc-500">© {new Date().getFullYear()} Arethusa</div>
+            <div className="mt-10 text-xs text-zinc-500">
+              © {new Date().getFullYear()} Arethusa
+            </div>
           </div>
         </SectionShell>
       </main>
     </div>
-  )
+  );
 }
 
 function CopyEmailButton({ email }: { email: string }) {
-  const [state, setState] = useState<"idle" | "copied" | "error">("idle")
+  const [state, setState] = useState<"idle" | "copied" | "error">("idle");
 
   async function copy() {
     try {
-      await navigator.clipboard.writeText(email)
-      setState("copied")
-      window.setTimeout(() => setState("idle"), 1200)
+      await navigator.clipboard.writeText(email);
+      setState("copied");
+      window.setTimeout(() => setState("idle"), 1200);
     } catch {
-      setState("error")
-      window.setTimeout(() => setState("idle"), 1200)
+      setState("error");
+      window.setTimeout(() => setState("idle"), 1200);
     }
   }
 
@@ -465,22 +618,22 @@ function CopyEmailButton({ email }: { email: string }) {
     >
       {state === "idle" ? "Copy" : state === "copied" ? "Copied" : "Failed"}
     </button>
-  )
+  );
 }
 
 function NotFoundRedirect() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   useEffect(() => {
-    navigate("/", { replace: true })
-  }, [navigate])
+    navigate("/", { replace: true });
+  }, [navigate]);
 
-  return null
+  return null;
 }
 
 export default function App() {
-  const location = useLocation()
-  const reduced = useReducedMotion()
+  const location = useLocation();
+  const reduced = useReducedMotion();
 
   return (
     <AnimatePresence mode="wait">
@@ -497,5 +650,5 @@ export default function App() {
         </Routes>
       </motion.div>
     </AnimatePresence>
-  )
+  );
 }
