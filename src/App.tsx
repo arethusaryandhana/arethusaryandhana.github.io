@@ -549,10 +549,10 @@ function HomePage() {
             >
               <div className="relative">
                 <div className="absolute -inset-10 rounded-full bg-accent-500/10 blur-3xl" />
-                <img
-                  src="/avatar.jpg"
-                  alt="Arethusa Aryandhana"
-                  className="relative h-48 w-48 rounded-full border border-zinc-200/70 object-cover shadow-xl dark:border-white/10"
+                <div
+                  className="relative h-48 w-48 rounded-full border border-zinc-200/70 bg-gradient-to-br from-zinc-100 to-zinc-200 shadow-xl dark:border-white/10 dark:from-zinc-900 dark:to-zinc-800"
+                  aria-label="Arethusa Aryandhana"
+                  role="img"
                 />
               </div>
             </motion.div>
