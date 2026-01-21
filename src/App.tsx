@@ -8,6 +8,17 @@ import {
 } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTheme } from "./hooks/useTheme";
+import {
+  techIcons,
+  socialIcons,
+  CodeIcon,
+  BriefcaseIcon,
+  SkillsIcon,
+  CertificateIcon,
+  GraduationIcon,
+  ContactIcon,
+  SocialIcon,
+} from "./icons";
 
 type SectionKey =
   | "top"
@@ -239,15 +250,21 @@ function Header({ activeId }: { activeId: string }) {
 function SectionShell({
   id,
   children,
+  bgClass = "",
 }: {
   id: string;
   children: React.ReactNode;
+  bgClass?: string;
 }) {
   const reduced = useReducedMotion();
 
   return (
-    <section id={id} className="snap-start min-h-dvh px-4 pb-16 pt-24">
-      <div className="mx-auto flex min-h-[calc(100dvh-6rem-4rem)] max-w-6xl items-center">
+    <section id={id} className={`section-bg ${bgClass} snap-start min-h-dvh px-4 pb-16 pt-24`}>
+      {/* Floating orbs for visual interest */}
+      <div className="section-orb section-orb-1" />
+      <div className="section-orb section-orb-2" />
+
+      <div className="relative z-10 mx-auto flex min-h-[calc(100dvh-6rem-4rem)] max-w-6xl items-center">
         <motion.div
           initial={reduced ? false : { opacity: 0, y: 22, filter: "blur(6px)" }}
           whileInView={
@@ -278,15 +295,125 @@ function Pill({ children }: { children: React.ReactNode }) {
   );
 }
 
-function MinimalGrid({ children }: { children: React.ReactNode }) {
-  return <div className="grid gap-4 md:grid-cols-3">{children}</div>;
+// Animated Pill with subtle pop-in effect
+function AnimatedPill({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const reduced = useReducedMotion();
+  return (
+    <motion.span
+      initial={reduced ? false : { opacity: 0, scale: 0.8 }}
+      whileInView={reduced ? undefined : { opacity: 1, scale: 1 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.4, delay, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={reduced ? undefined : { scale: 1.05 }}
+      className="rounded-full border border-zinc-200/70 bg-white/70 px-3 py-1 text-xs text-zinc-700 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200"
+    >
+      {children}
+    </motion.span>
+  );
 }
 
-function Card({ children }: { children: React.ReactNode }) {
+// Staggered container for grid items
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const staggerItem = {
+  hidden: { opacity: 0, y: 20 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: [0.16, 1, 0.3, 1] as const,
+    },
+  },
+};
+
+function MinimalGrid({ children }: { children: React.ReactNode }) {
+  const reduced = useReducedMotion();
   return (
-    <div className="rounded-2xl border border-zinc-200/70 bg-white/70 p-5 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:border-zinc-300 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:bg-white/10">
+    <motion.div
+      className="grid gap-4 md:grid-cols-3"
+      variants={reduced ? undefined : staggerContainer}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, amount: 0.2 }}
+    >
       {children}
-    </div>
+    </motion.div>
+  );
+}
+
+// Animated Card with hover effects
+function Card({ children }: { children: React.ReactNode }) {
+  const reduced = useReducedMotion();
+  return (
+    <motion.div
+      variants={reduced ? undefined : staggerItem}
+      whileHover={reduced ? undefined : {
+        y: -4,
+        scale: 1.02,
+        transition: { duration: 0.2, ease: "easeOut" }
+      }}
+      className="rounded-2xl border border-zinc-200/70 bg-white/70 p-5 shadow-sm transition-colors duration-300 ease-out hover:border-zinc-300 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:bg-white/10"
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+// Animated icon with pulse effect
+function AnimatedIcon({
+  children,
+  delay = 0
+}: {
+  children: React.ReactNode;
+  delay?: number;
+}) {
+  const reduced = useReducedMotion();
+  return (
+    <motion.div
+      initial={reduced ? false : { opacity: 0, rotate: -10, scale: 0.8 }}
+      whileInView={reduced ? undefined : { opacity: 1, rotate: 0, scale: 1 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5, delay, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={reduced ? undefined : {
+        rotate: [0, -5, 5, 0],
+        transition: { duration: 0.4 }
+      }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+// Animated section title
+function AnimatedTitle({
+  children,
+  icon
+}: {
+  children: React.ReactNode;
+  icon?: React.ReactNode;
+}) {
+  const reduced = useReducedMotion();
+  return (
+    <motion.div
+      className="flex items-center gap-3"
+      initial={reduced ? false : { opacity: 0, x: -20 }}
+      whileInView={reduced ? undefined : { opacity: 1, x: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+    >
+      {icon && <AnimatedIcon>{icon}</AnimatedIcon>}
+      <h2 className="text-3xl font-semibold tracking-tight">{children}</h2>
+    </motion.div>
   );
 }
 
@@ -332,9 +459,11 @@ function HomePage() {
 
   const experience = useMemo(
     () => [
-      { role: "Full‑Stack", company: "TechNova", period: "2024—Now" },
-      { role: "Backend", company: "CloudWorks", period: "2022—2024" },
-      { role: "Frontend", company: "PixelCraft", period: "2021—2022" },
+      { role: "Middleware, DB & API Tech", company: "PT. Meratus Line", period: "Jun 2024 — Now" },
+      { role: "Business Solution Software Developer", company: "PT. Meratus Line", period: "Jul 2023 — May 2024" },
+      { role: "IT Developer Supervisor", company: "PT. Graha Multi Bintang", period: "Jan 2023 — Jun 2023" },
+      { role: "Senior Full Stack Programmer", company: "PT. Graha Multi Bintang", period: "Oct 2021 — Jan 2023" },
+      { role: "Backend Software Developer", company: "PT. SMART IT", period: "Dec 2019 — Mar 2021" },
     ],
     [],
   );
@@ -379,7 +508,7 @@ function HomePage() {
         className="h-dvh snap-y snap-mandatory overflow-y-auto overscroll-contain"
         style={{ scrollBehavior: "smooth" }}
       >
-        <SectionShell id="top">
+        <SectionShell id="top" bgClass="section-bg-hero">
           <div className="grid items-center gap-10 md:grid-cols-[1.2fr_0.8fr]">
             <div>
               <Pill>Full‑Stack Developer</Pill>
@@ -389,7 +518,10 @@ function HomePage() {
 
               <div className="mt-5 flex flex-wrap gap-2">
                 <Pill>React</Pill>
-                <Pill>Node</Pill>
+                <Pill>Vue</Pill>
+                <Pill>Laravel</Pill>
+                <Pill>Docker</Pill>
+                <Pill>Kubernetes</Pill>
                 <Pill>Postgres</Pill>
               </div>
 
@@ -427,10 +559,12 @@ function HomePage() {
           </div>
         </SectionShell>
 
-        <SectionShell id="projects">
+        <SectionShell id="projects" bgClass="section-bg-projects">
           <div>
-            <h2 className="text-3xl font-semibold tracking-tight">Projects</h2>
-            <div className="mt-6">
+            <AnimatedTitle icon={<CodeIcon className="text-accent-500" size={32} />}>
+              Projects
+            </AnimatedTitle>
+            <div className="mt-8">
               <MinimalGrid>
                 {projects.map((p) => (
                   <Card key={p.name}>
@@ -456,8 +590,10 @@ function HomePage() {
                       </div>
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">
-                      {p.tech.map((t) => (
-                        <Pill key={t}>{t}</Pill>
+                      {p.tech.map((t, i) => (
+                        <AnimatedPill key={t} delay={i * 0.1}>
+                          {t}
+                        </AnimatedPill>
                       ))}
                     </div>
                   </Card>
@@ -467,12 +603,18 @@ function HomePage() {
           </div>
         </SectionShell>
 
-        <SectionShell id="experience">
+        <SectionShell id="experience" bgClass="section-bg-experience">
           <div>
-            <h2 className="text-3xl font-semibold tracking-tight">
+            <AnimatedTitle icon={<BriefcaseIcon className="text-accent-500" size={32} />}>
               Experience
-            </h2>
-            <div className="mt-6 grid gap-4">
+            </AnimatedTitle>
+            <motion.div
+              className="mt-8 grid gap-4"
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.2 }}
+            >
               {experience.map((e) => (
                 <Card key={`${e.role}-${e.company}`}>
                   <div className="flex items-baseline justify-between gap-3">
@@ -486,29 +628,73 @@ function HomePage() {
                   </div>
                 </Card>
               ))}
-            </div>
+            </motion.div>
           </div>
         </SectionShell>
 
-        <SectionShell id="skills">
+        <SectionShell id="skills" bgClass="section-bg-skills">
           <div>
-            <h2 className="text-3xl font-semibold tracking-tight">Skills</h2>
-            <div className="mt-6 flex flex-wrap gap-2">
-              {["React", "TypeScript", "Node.js", "PostgreSQL", "Docker"].map(
-                (t) => (
-                  <Pill key={t}>{t}</Pill>
-                ),
+            <AnimatedTitle icon={<SkillsIcon className="text-accent-500" size={32} />}>
+              Skills
+            </AnimatedTitle>
+            <motion.div
+              className="mt-8 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.2 }}
+            >
+              {[
+                "React",
+                "Vue.js",
+                "TypeScript",
+                "Node.js",
+                "PHP",
+                "Laravel",
+                ".NET",
+                "Golang",
+                "PostgreSQL",
+                "MySQL",
+                "SQL Server",
+                "MongoDB",
+                "Redis",
+                "Docker",
+                "Kubernetes",
+                "Kafka",
+                "WebSocket",
+                "MinIO",
+                "CDC",
+                "Pentaho",
+              ].map(
+                (t) => {
+                  const Icon = techIcons[t];
+                  return (
+                    <Card key={t}>
+                      <div className="flex flex-col items-center gap-3">
+                        {Icon && (
+                          <AnimatedIcon>
+                            <Icon
+                              className="text-accent-500"
+                              size={40}
+                            />
+                          </AnimatedIcon>
+                        )}
+                        <span className="text-sm font-medium">{t}</span>
+                      </div>
+                    </Card>
+                  );
+                },
               )}
-            </div>
+            </motion.div>
           </div>
         </SectionShell>
 
-        <SectionShell id="certificates">
+        <SectionShell id="certificates" bgClass="section-bg-certificates">
           <div>
-            <h2 className="text-3xl font-semibold tracking-tight">
+            <AnimatedTitle icon={<CertificateIcon className="text-accent-500" size={32} />}>
               Certificates
-            </h2>
-            <div className="mt-6">
+            </AnimatedTitle>
+            <div className="mt-8">
               <MinimalGrid>
                 {certificates.map((c) => (
                   <a
@@ -530,26 +716,30 @@ function HomePage() {
           </div>
         </SectionShell>
 
-        <SectionShell id="education">
+        <SectionShell id="education" bgClass="section-bg-education">
           <div>
-            <h2 className="text-3xl font-semibold tracking-tight">Education</h2>
-            <div className="mt-6 max-w-xl">
+            <AnimatedTitle icon={<GraduationIcon className="text-accent-500" size={32} />}>
+              Education
+            </AnimatedTitle>
+            <div className="mt-8 max-w-xl">
               <Card>
                 <div className="text-sm font-semibold">
                   B.Sc. Computer Science
                 </div>
                 <div className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-                  Example University · 2019—2023
+                  Surabaya University · 2015—2019
                 </div>
               </Card>
             </div>
           </div>
         </SectionShell>
 
-        <SectionShell id="contact">
+        <SectionShell id="contact" bgClass="section-bg-contact">
           <div>
-            <h2 className="text-3xl font-semibold tracking-tight">Contact</h2>
-            <div className="mt-6 flex flex-wrap items-center gap-3">
+            <AnimatedTitle icon={<ContactIcon className="text-accent-500" size={32} />}>
+              Contact
+            </AnimatedTitle>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
               <a
                 href="mailto:ryan.arethusa@gmail.com"
                 className="rounded-xl border border-zinc-200/70 bg-white/70 px-5 py-2.5 text-sm font-semibold text-zinc-900 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-zinc-100 dark:hover:bg-white/10"
@@ -561,34 +751,54 @@ function HomePage() {
           </div>
         </SectionShell>
 
-        <SectionShell id="social">
+        <SectionShell id="social" bgClass="section-bg-social">
           <div>
-            <h2 className="text-3xl font-semibold tracking-tight">Social</h2>
-            <div className="mt-6">
+            <AnimatedTitle icon={<SocialIcon className="text-accent-500" size={32} />}>
+              Social
+            </AnimatedTitle>
+            <div className="mt-8">
               <MinimalGrid>
-                {socials.map((s) => (
-                  <a
-                    key={s.label}
-                    href={s.href}
-                    target={s.href.startsWith("mailto:") ? undefined : "_blank"}
-                    rel={
-                      s.href.startsWith("mailto:") ? undefined : "noreferrer"
-                    }
-                  >
-                    <Card>
-                      <div className="text-sm font-semibold">{s.label}</div>
-                      <div className="mt-2 break-all text-xs text-zinc-500 dark:text-zinc-400">
-                        {s.href}
-                      </div>
-                    </Card>
-                  </a>
-                ))}
+                {socials.map((s) => {
+                  const Icon = socialIcons[s.label];
+                  return (
+                    <a
+                      key={s.label}
+                      href={s.href}
+                      target={s.href.startsWith("mailto:") ? undefined : "_blank"}
+                      rel={
+                        s.href.startsWith("mailto:") ? undefined : "noreferrer"
+                      }
+                    >
+                      <Card>
+                        <div className="flex items-center gap-3">
+                          {Icon && (
+                            <AnimatedIcon>
+                              <Icon
+                                className="text-accent-500"
+                                size={24}
+                              />
+                            </AnimatedIcon>
+                          )}
+                          <div className="text-sm font-semibold">{s.label}</div>
+                        </div>
+                        <div className="mt-2 break-all text-xs text-zinc-500 dark:text-zinc-400">
+                          {s.href.replace("mailto:", "").replace("https://", "")}
+                        </div>
+                      </Card>
+                    </a>
+                  );
+                })}
               </MinimalGrid>
             </div>
 
-            <div className="mt-10 text-xs text-zinc-500">
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="mt-10 text-xs text-zinc-500"
+            >
               © {new Date().getFullYear()} Arethusa
-            </div>
+            </motion.div>
           </div>
         </SectionShell>
       </main>
