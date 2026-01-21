@@ -99,7 +99,8 @@ const sections: SectionDef[] = [
 
 const byPath = new Map(sections.map((s) => [s.path, s]));
 
-function useActiveSection({ rootId }: { rootId: string }) {
+
+function useActiveSection() {
   const location = useLocation();
   const [activeId, setActiveId] = useState<string>(
     () => (byPath.get(location.pathname) ?? byPath.get("/"))!.id,
@@ -136,9 +137,6 @@ function useActiveSection({ rootId }: { rootId: string }) {
 
   // Track active section during manual scroll
   useEffect(() => {
-    const root = document.getElementById(rootId);
-    if (!root) return;
-
     let rafId: number;
     let lastScrollTime = 0;
 
@@ -155,9 +153,8 @@ function useActiveSection({ rootId }: { rootId: string }) {
       if (rafId) cancelAnimationFrame(rafId);
 
       rafId = requestAnimationFrame(() => {
-        const scrollTop = root.scrollTop;
-        const viewportHeight = root.clientHeight;
-        const scrollCenter = scrollTop + viewportHeight / 2;
+        const viewportHeight = window.innerHeight;
+        const viewCenter = viewportHeight / 2;
 
         // Find which section is currently in view
         let currentSection: SectionDef | null = null;
@@ -168,9 +165,8 @@ function useActiveSection({ rootId }: { rootId: string }) {
           if (!el) continue;
 
           const rect = el.getBoundingClientRect();
-          const elTop = rect.top + scrollTop;
-          const elCenter = elTop + rect.height / 2;
-          const distance = Math.abs(scrollCenter - elCenter);
+          const elCenter = rect.top + rect.height / 2;
+          const distance = Math.abs(viewCenter - elCenter);
 
           if (distance < minDistance) {
             minDistance = distance;
@@ -184,13 +180,13 @@ function useActiveSection({ rootId }: { rootId: string }) {
       });
     };
 
-    root.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("scroll", handleScroll, { passive: true });
 
     return () => {
-      root.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("scroll", handleScroll);
       if (rafId) cancelAnimationFrame(rafId);
     };
-  }, [rootId, activeId]);
+  }, [activeId]);
 
   return { activeId };
 }
@@ -276,7 +272,8 @@ function SectionShell({
                   filter: "blur(0px)",
                 }
           }
-          viewport={{ once: false, amount: 0.7 }}
+          // Lower threshold so tall sections (e.g. Skills on mobile) still reveal
+          viewport={{ once: false, amount: 0.2 }}
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           className="w-full"
         >
@@ -362,7 +359,7 @@ function Card({ children }: { children: React.ReactNode }) {
         scale: 1.02,
         transition: { duration: 0.2, ease: "easeOut" }
       }}
-      className="rounded-2xl border border-zinc-200/70 bg-white/70 p-5 shadow-sm transition-colors duration-300 ease-out hover:border-zinc-300 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:bg-white/10"
+      className="rounded-2xl border border-zinc-200/70 bg-white/70 p-3 sm:p-5 shadow-sm transition-colors duration-300 ease-out hover:border-zinc-300 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:bg-white/10"
     >
       {children}
     </motion.div>
@@ -419,7 +416,7 @@ function AnimatedTitle({
 
 function HomePage() {
   const reduced = useReducedMotion();
-  const { activeId } = useActiveSection({ rootId: "scroll-root" });
+  const { activeId } = useActiveSection();
 
   const socials = useMemo(
     () => [
@@ -494,6 +491,9 @@ function HomePage() {
 
   return (
     <div className="bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+      {/* Global Background Layer */}
+      <div id="global-bg" className="fixed inset-0 z-0 select-none pointer-events-none" />
+
       <a
         href="#projects"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 rounded-md bg-accent-500 px-3 py-2 text-sm font-semibold text-zinc-950"
@@ -503,12 +503,8 @@ function HomePage() {
 
       <Header activeId={activeId} />
 
-      <main
-        id="scroll-root"
-        className="h-dvh snap-y snap-mandatory overflow-y-auto overscroll-contain"
-        style={{ scrollBehavior: "smooth" }}
-      >
-        <SectionShell id="top" bgClass="section-bg-hero">
+      <main className="min-h-dvh w-full">
+        <SectionShell id="top">
           <div className="grid items-center gap-10 md:grid-cols-[1.2fr_0.8fr]">
             <div>
               <Pill>Full‑Stack Developer</Pill>
@@ -519,7 +515,6 @@ function HomePage() {
               <div className="mt-5 flex flex-wrap gap-2">
                 <Pill>React</Pill>
                 <Pill>Vue</Pill>
-                <Pill>Laravel</Pill>
                 <Pill>Docker</Pill>
                 <Pill>Kubernetes</Pill>
                 <Pill>Postgres</Pill>
@@ -638,7 +633,7 @@ function HomePage() {
               Skills
             </AnimatedTitle>
             <motion.div
-              className="mt-8 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
+              className="mt-8 grid grid-cols-4 gap-2 sm:gap-4 sm:grid-cols-4 md:grid-cols-5"
               variants={staggerContainer}
               initial="hidden"
               whileInView="show"
@@ -670,16 +665,15 @@ function HomePage() {
                   const Icon = techIcons[t];
                   return (
                     <Card key={t}>
-                      <div className="flex flex-col items-center gap-3">
+                      <div className="flex flex-col items-center gap-2 sm:gap-3">
                         {Icon && (
                           <AnimatedIcon>
                             <Icon
-                              className="text-accent-500"
-                              size={40}
+                              className="text-accent-500 w-8 h-8 sm:w-10 sm:h-10"
                             />
                           </AnimatedIcon>
                         )}
-                        <span className="text-sm font-medium">{t}</span>
+                        <span className="text-[10px] font-medium sm:text-sm text-center leading-tight">{t}</span>
                       </div>
                     </Card>
                   );
