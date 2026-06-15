@@ -1,10 +1,9 @@
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
-  type CSSProperties,
   type ComponentType,
-  type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
 import { Link, Route, Routes, useLocation } from "react-router-dom";
@@ -23,6 +22,12 @@ import {
   ExternalLinkIcon,
 } from "./icons";
 
+/* ═══════════════════════════════════════════════════════
+   DATA
+   ═══════════════════════════════════════════════════════ */
+
+type IconProps = { className?: string; size?: number };
+
 type SectionKey =
   | "top"
   | "projects"
@@ -32,11 +37,6 @@ type SectionKey =
   | "education"
   | "contact"
   | "social";
-
-type IconProps = {
-  className?: string;
-  size?: number;
-};
 
 type SectionDef = {
   key: SectionKey;
@@ -56,9 +56,9 @@ const sections: SectionDef[] = [
     path: "/",
     id: "top",
     label: "Home",
-    title: "Arethusa Aryandhana | Full-Stack Developer",
+    title: "arethusa@dev:~/portfolio",
     fileName: "intro.tsx",
-    summary: "Boot sequence and profile overview",
+    summary: "Boot sequence & profile",
     command: "npx arethusa --intro --live",
     icon: CodeIcon,
   },
@@ -67,10 +67,10 @@ const sections: SectionDef[] = [
     path: "/projects",
     id: "projects",
     label: "Projects",
-    title: "Projects | Arethusa Aryandhana",
+    title: "Projects | arethusa.dev",
     fileName: "projects.ts",
-    summary: "Selected builds and shipped work",
-    command: "ls ./projects --featured --interactive",
+    summary: "Featured builds",
+    command: "ls -la ./projects --featured",
     icon: CodeIcon,
   },
   {
@@ -78,10 +78,10 @@ const sections: SectionDef[] = [
     path: "/experience",
     id: "experience",
     label: "Experience",
-    title: "Experience | Arethusa Aryandhana",
+    title: "Experience | arethusa.dev",
     fileName: "experience.log",
-    summary: "Professional timeline and roles",
-    command: "cat experience.log | tail -n 5",
+    summary: "Work timeline",
+    command: "git log --oneline --graph career.log",
     icon: BriefcaseIcon,
   },
   {
@@ -89,21 +89,21 @@ const sections: SectionDef[] = [
     path: "/skills",
     id: "skills",
     label: "Skills",
-    title: "Skills | Arethusa Aryandhana",
+    title: "Skills | arethusa.dev",
     fileName: "stack.json",
-    summary: "Core engineering toolkit",
-    command: "parse stack.json --grouped --visual",
+    summary: "Tech stack",
+    command: "cat stack.json | jq '.skills'",
     icon: SkillsIcon,
   },
   {
     key: "certificates",
     path: "/certificates",
     id: "certificates",
-    label: "Certificates",
-    title: "Certificates | Arethusa Aryandhana",
-    fileName: "certifications.md",
-    summary: "Verified learning records",
-    command: "open certifications.md --verified",
+    label: "Certs",
+    title: "Certificates | arethusa.dev",
+    fileName: "certs.md",
+    summary: "Credentials",
+    command: "cat certs.md --verified",
     icon: CertificateIcon,
   },
   {
@@ -111,10 +111,10 @@ const sections: SectionDef[] = [
     path: "/education",
     id: "education",
     label: "Education",
-    title: "Education | Arethusa Aryandhana",
+    title: "Education | arethusa.dev",
     fileName: "education.yml",
-    summary: "Academic background",
-    command: "cat education.yml --timeline",
+    summary: "Academic record",
+    command: "cat education.yml",
     icon: GraduationIcon,
   },
   {
@@ -122,10 +122,10 @@ const sections: SectionDef[] = [
     path: "/contact-person",
     id: "contact",
     label: "Contact",
-    title: "Contact | Arethusa Aryandhana",
+    title: "Contact | arethusa.dev",
     fileName: "contact.sh",
-    summary: "Primary contact channel",
-    command: "./contact.sh --open --collab",
+    summary: "Reach out",
+    command: "bash contact.sh --open",
     icon: ContactIcon,
   },
   {
@@ -133,32 +133,35 @@ const sections: SectionDef[] = [
     path: "/social-media",
     id: "social",
     label: "Social",
-    title: "Social | Arethusa Aryandhana",
-    fileName: "links.env",
-    summary: "Public profiles and network",
-    command: "source links.env --public",
+    title: "Social | arethusa.dev",
+    fileName: ".env.social",
+    summary: "Online profiles",
+    command: "source .env.social && echo $LINKS",
     icon: SocialIcon,
   },
 ];
 
-const byPath = new Map(sections.map((section) => [section.path, section]));
+const byPath = new Map(sections.map((s) => [s.path, s]));
 
 const projects = [
   {
     name: "StackForge",
-    tech: ["React", "Node"],
+    desc: "Full-stack project scaffolding tool with template engine",
+    tech: ["React", "Node.js", "TypeScript"],
     repo: "https://github.com/arethusaryandhana/stackforge",
     live: "https://stackforge.example.com",
   },
   {
     name: "Orderly POS",
-    tech: ["React", "Redis"],
+    desc: "Point-of-sale system with real-time inventory sync",
+    tech: ["React", "Redis", "WebSocket"],
     repo: "https://github.com/arethusaryandhana/orderly-pos",
     live: "https://orderly.example.com",
   },
   {
     name: "API Sentinel",
-    tech: ["Node", "Postgres"],
+    desc: "API monitoring dashboard with alerting and analytics",
+    tech: ["Node.js", "PostgreSQL", "Docker"],
     repo: "https://github.com/arethusaryandhana/api-sentinel",
     live: "https://sentinel.example.com",
   },
@@ -168,27 +171,32 @@ const experience = [
   {
     role: "Middleware, DB & API Tech",
     company: "PT. Meratus Line",
-    period: "Jun 2024 - Now",
+    period: "Jun 2024 — Present",
+    hash: "a3f7c2d",
   },
   {
     role: "Business Solution Software Developer",
     company: "PT. Meratus Line",
-    period: "Jul 2023 - May 2024",
+    period: "Jul 2023 — May 2024",
+    hash: "e1b4a08",
   },
   {
     role: "IT Developer Supervisor",
     company: "PT. Graha Multi Bintang",
-    period: "Jan 2023 - Jun 2023",
+    period: "Jan 2023 — Jun 2023",
+    hash: "c9d2f15",
   },
   {
     role: "Senior Full Stack Programmer",
     company: "PT. Graha Multi Bintang",
-    period: "Oct 2021 - Jan 2023",
+    period: "Oct 2021 — Jan 2023",
+    hash: "b8e6a23",
   },
   {
     role: "Backend Software Developer",
     company: "PT. SMART IT",
-    period: "Dec 2019 - Mar 2021",
+    period: "Dec 2019 — Mar 2021",
+    hash: "d4c1b97",
   },
 ];
 
@@ -226,59 +234,83 @@ const certificates = [
 ];
 
 const socials = [
-  { label: "GitHub", href: "https://github.com/arethusaryandhana" },
-  {
-    label: "LinkedIn",
-    href: "https://www.linkedin.com/in/arethusa-aryandhana/",
-  },
-  { label: "Email", href: "mailto:ryan.arethusa@gmail.com" },
-];
-
-const overviewStats = [
-  { label: "Experience roles", value: `0${experience.length}`.slice(-2) },
-  { label: "Core stack items", value: "20" },
-  { label: "Certificates", value: `0${certificates.length}`.slice(-2) },
+  { label: "GitHub", href: "https://github.com/arethusaryandhana", envKey: "GITHUB_URL" },
+  { label: "LinkedIn", href: "https://www.linkedin.com/in/arethusa-aryandhana/", envKey: "LINKEDIN_URL" },
+  { label: "Email", href: "mailto:ryan.arethusa@gmail.com", envKey: "EMAIL" },
 ];
 
 const skillGroups = [
   {
     label: "Frontend",
-    items: ["React", "Vue.js", "TypeScript"],
+    items: [
+      { name: "React", level: 92 },
+      { name: "Vue.js", level: 78 },
+      { name: "TypeScript", level: 88 },
+    ],
   },
   {
     label: "Backend",
-    items: ["Node.js", "PHP", "Laravel", ".NET", "Golang"],
+    items: [
+      { name: "Node.js", level: 90 },
+      { name: "PHP", level: 82 },
+      { name: "Laravel", level: 80 },
+      { name: ".NET", level: 70 },
+      { name: "Golang", level: 65 },
+    ],
   },
   {
     label: "Data",
-    items: ["PostgreSQL", "MySQL", "SQL Server", "MongoDB", "Redis", "CDC", "Pentaho"],
+    items: [
+      { name: "PostgreSQL", level: 88 },
+      { name: "MySQL", level: 85 },
+      { name: "SQL Server", level: 80 },
+      { name: "MongoDB", level: 72 },
+      { name: "Redis", level: 78 },
+      { name: "CDC", level: 68 },
+      { name: "Pentaho", level: 60 },
+    ],
   },
   {
     label: "Platform",
-    items: ["Docker", "Kubernetes", "Kafka", "WebSocket", "MinIO"],
+    items: [
+      { name: "Docker", level: 85 },
+      { name: "Kubernetes", level: 70 },
+      { name: "Kafka", level: 72 },
+      { name: "WebSocket", level: 82 },
+      { name: "MinIO", level: 65 },
+    ],
   },
 ];
 
-const typewriterLines = [
+const typewriterPhrases = [
   "shipping dependable backend systems",
   "designing APIs and middleware flows",
-  "turning business workflows into clean interfaces",
+  "building clean, maintainable interfaces",
 ];
 
-const liveSignals = [
-  { label: "api-architecture", value: 92, tone: "cyan" },
-  { label: "middleware-sync", value: 88, tone: "violet" },
-  { label: "delivery-focus", value: 96, tone: "lime" },
-] as const;
+const bootLines = [
+  { text: "[    0.001] Kernel: loading arethusa.dev v2.0...", delay: 0 },
+  { text: "[    0.024] CPU: Full-Stack Developer (5+ years)", delay: 200 },
+  { text: "[    0.048] RAM: JavaScript • TypeScript • Go • PHP • C#", delay: 400 },
+  { text: "[    0.096] DISK: Mounting /projects /experience /skills...", delay: 600 },
+  { text: "[    0.128] NET: Connecting to middleware layer... [OK]", delay: 800 },
+  { text: "[    0.256] GPU: Rendering terminal interface... [OK]", delay: 1000 },
+  { text: "[    0.512] SYS: All systems operational ✓", delay: 1200 },
+  { text: "", delay: 1400 },
+  { text: "Welcome to arethusa.dev — type 'help' for commands", delay: 1500 },
+];
 
-function updatePointerGlow(event: ReactPointerEvent<HTMLElement>) {
-  const rect = event.currentTarget.getBoundingClientRect();
-  const x = event.clientX - rect.left;
-  const y = event.clientY - rect.top;
+const ASCII_ART = `
+ █████╗ ██████╗ ███████╗████████╗██╗  ██╗██╗   ██╗███████╗ █████╗
+██╔══██╗██╔══██╗██╔════╝╚══██╔══╝██║  ██║██║   ██║██╔════╝██╔══██╗
+███████║██████╔╝█████╗     ██║   ███████║██║   ██║███████╗███████║
+██╔══██║██╔══██╗██╔══╝     ██║   ██╔══██║██║   ██║╚════██║██╔══██║
+██║  ██║██║  ██║███████╗   ██║   ██║  ██║╚██████╔╝███████║██║  ██║
+╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝`.trim();
 
-  event.currentTarget.style.setProperty("--pointer-x", `${x}px`);
-  event.currentTarget.style.setProperty("--pointer-y", `${y}px`);
-}
+/* ═══════════════════════════════════════════════════════
+   HOOKS
+   ═══════════════════════════════════════════════════════ */
 
 function useActiveSection() {
   const location = useLocation();
@@ -313,7 +345,6 @@ function useActiveSection() {
 
     const handleScroll = () => {
       if (isNavigatingRef.current) return;
-
       const now = Date.now();
       if (now - lastScrollTime < 100) return;
       lastScrollTime = now;
@@ -321,19 +352,15 @@ function useActiveSection() {
       if (rafId) cancelAnimationFrame(rafId);
 
       rafId = requestAnimationFrame(() => {
-        const viewportHeight = window.innerHeight;
-        const viewCenter = viewportHeight / 2;
-
+        const viewCenter = window.innerHeight / 2;
         let currentSection: SectionDef | null = null;
-        let minDistance = Number.POSITIVE_INFINITY;
+        let minDistance = Infinity;
 
         for (const section of sections) {
           const el = document.getElementById(section.id);
           if (!el) continue;
-
           const rect = el.getBoundingClientRect();
           const distance = Math.abs(viewCenter - (rect.top + rect.height / 2));
-
           if (distance < minDistance) {
             minDistance = distance;
             currentSection = section;
@@ -347,7 +374,6 @@ function useActiveSection() {
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
-
     return () => {
       window.removeEventListener("scroll", handleScroll);
       if (rafId) cancelAnimationFrame(rafId);
@@ -357,6 +383,85 @@ function useActiveSection() {
   return { activeId };
 }
 
+/* ═══════════════════════════════════════════════════════
+   SHARED COMPONENTS
+   ═══════════════════════════════════════════════════════ */
+
+function MatrixRain() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const reduced = useReducedMotion();
+
+  useEffect(() => {
+    if (reduced) return;
+    if (!canvasRef.current) return;
+
+    const cvs = canvasRef.current!;
+    const ctx = cvs.getContext("2d")!;
+    if (!ctx) return;
+
+    let animId: number;
+    const chars = "01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン";
+    const fontSize = 14;
+    let columns = Math.floor(cvs.width / fontSize);
+    let drops = Array.from({ length: columns }, () => 0);
+
+    function resize() {
+      cvs.width = window.innerWidth;
+      cvs.height = window.innerHeight;
+      columns = Math.floor(cvs.width / fontSize);
+      drops = Array.from({ length: columns }, () =>
+        Math.random() * cvs.height / fontSize * -1
+      );
+    }
+
+    resize();
+    window.addEventListener("resize", resize);
+
+    function draw() {
+      ctx.fillStyle = "rgba(8, 12, 20, 0.08)";
+      ctx.fillRect(0, 0, cvs.width, cvs.height);
+
+      ctx.fillStyle = "rgba(0, 255, 159, 0.35)";
+      ctx.font = `${fontSize}px monospace`;
+
+      for (let i = 0; i < drops.length; i++) {
+        const char = chars[Math.floor(Math.random() * chars.length)];
+        const x = i * fontSize;
+        const y = drops[i] * fontSize;
+
+        ctx.fillText(char, x, y);
+
+        if (y > cvs.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i] += 0.5;
+      }
+
+      animId = requestAnimationFrame(draw);
+    }
+
+    draw();
+
+    return () => {
+      window.removeEventListener("resize", resize);
+      cancelAnimationFrame(animId);
+    };
+  }, [reduced]);
+
+  if (reduced) return null;
+  return <canvas ref={canvasRef} className="matrix-canvas" />;
+}
+
+function TerminalDots() {
+  return (
+    <div className="terminal-dots">
+      <span className="terminal-dot terminal-dot--red" />
+      <span className="terminal-dot terminal-dot--yellow" />
+      <span className="terminal-dot terminal-dot--green" />
+    </div>
+  );
+}
+
 function TypewriterText({ items }: { items: string[] }) {
   const [lineIndex, setLineIndex] = useState(0);
   const [displayed, setDisplayed] = useState("");
@@ -364,945 +469,1024 @@ function TypewriterText({ items }: { items: string[] }) {
 
   useEffect(() => {
     const current = items[lineIndex];
-    const step = isDeleting ? 22 : 42;
+    const step = isDeleting ? 18 : 45;
 
     const timeout = window.setTimeout(() => {
       if (!isDeleting && displayed.length < current.length) {
         setDisplayed(current.slice(0, displayed.length + 1));
         return;
       }
-
       if (!isDeleting && displayed.length === current.length) {
-        setIsDeleting(true);
+        window.setTimeout(() => setIsDeleting(true), 1500);
         return;
       }
-
       if (isDeleting && displayed.length > 0) {
         setDisplayed(current.slice(0, displayed.length - 1));
         return;
       }
-
       setIsDeleting(false);
       setLineIndex((prev) => (prev + 1) % items.length);
-    }, displayed.length === current.length && !isDeleting ? 1200 : step);
+    }, step);
 
     return () => window.clearTimeout(timeout);
   }, [displayed, isDeleting, items, lineIndex]);
 
   return (
-    <div className="typewriter-line mono-label text-sm text-[color:var(--text-soft)] sm:text-base">
-      <span className="text-[color:var(--accent-cyan)]">&gt;</span> {displayed}
-      <span className="command-caret" />
+    <div className="typing-line">
+      <span className="text-green">{">"}</span>
+      <span className="text-secondary">{displayed}</span>
+      <span className="cursor-block" />
     </div>
   );
 }
 
-function WindowControls() {
+function Prompt({
+  command,
+  typing = false,
+}: {
+  command: string;
+  typing?: boolean;
+}) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="window-dot bg-[#ff5f57]" />
-      <span className="window-dot bg-[#febc2e]" />
-      <span className="window-dot bg-[#28c840]" />
+    <div className="prompt">
+      <span className="prompt-user">arethusa@dev</span>
+      <span className="text-dim">:</span>
+      <span className="prompt-path">~/portfolio</span>
+      <span className="prompt-symbol">$</span>
+      <span className="prompt-command">{command}</span>
+      {typing && <span className="cursor-block" />}
     </div>
   );
 }
 
-function ThemeButton() {
-  const { mode, resolvedMode, setMode } = useTheme();
-
-  function cycleTheme() {
-    const next =
-      mode === "system" ? "light" : mode === "light" ? "dark" : "system";
-    setMode(next);
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={cycleTheme}
-      className="editor-button mono-label text-xs"
-      aria-label="Toggle theme"
-      title={`Theme: ${mode} (resolved: ${resolvedMode})`}
-    >
-      {resolvedMode === "dark" ? "dark-ui" : "light-ui"}
-    </button>
-  );
-}
-
-function GlassCard({
+function TerminalOutput({
   children,
   className = "",
-  hover = true,
 }: {
   children: ReactNode;
   className?: string;
-  hover?: boolean;
 }) {
-  const reduced = useReducedMotion();
-
   return (
-    <motion.div
-      onPointerMove={updatePointerGlow}
-      whileHover={hover && !reduced ? { y: -6, scale: 1.01 } : undefined}
-      transition={{ type: "spring", stiffness: 280, damping: 22 }}
-      className={`glass-card ${className}`}
-    >
+    <div className={`pl-0 mt-1 ${className}`} style={{ paddingLeft: 0 }}>
       {children}
-    </motion.div>
-  );
-}
-
-function CommandLine({
-  children,
-  vibrant = false,
-}: {
-  children: ReactNode;
-  vibrant?: boolean;
-}) {
-  return (
-    <div className="flex items-center gap-3 overflow-hidden text-xs sm:text-sm">
-      <span className="mono-label text-[color:var(--accent-cyan)]">$</span>
-      <span
-        className={`mono-label truncate ${
-          vibrant ? "text-[color:var(--text-main)]" : "text-[color:var(--text-soft)]"
-        }`}
-      >
-        {children}
-      </span>
     </div>
   );
 }
 
-function StatTile({
-  label,
-  value,
-  tone = "cyan",
-}: {
-  label: string;
-  value: string;
-  tone?: "cyan" | "violet" | "lime";
-}) {
-  return (
-    <GlassCard className={`tone-${tone} rounded-[22px] px-4 py-3`}>
-      <div className="mono-label text-[11px] uppercase tracking-[0.22em] text-[color:var(--text-dim)]">
-        {label}
-      </div>
-      <div className="mt-2 text-sm font-medium leading-6 text-[color:var(--text-main)]">
-        {value}
-      </div>
-    </GlassCard>
-  );
-}
-
-function MetricCard({ label, value }: { label: string; value: string }) {
-  return (
-    <GlassCard className="metric-card rounded-[22px] px-4 py-4">
-      <div className="mono-label text-[11px] uppercase tracking-[0.22em] text-[color:var(--text-dim)]">
-        {label}
-      </div>
-      <div className="mt-2 text-2xl font-semibold tracking-tight text-[color:var(--text-main)]">
-        {value}
-      </div>
-    </GlassCard>
-  );
-}
-
-function Badge({ children, tone = "cyan" }: { children: ReactNode; tone?: string }) {
-  return (
-    <span className={`terminal-chip tone-${tone}`}>
-      {children}
-    </span>
-  );
-}
-
-function ActionLink({
-  href,
-  children,
-  primary = false,
-}: {
-  href: string;
-  children: ReactNode;
-  primary?: boolean;
-}) {
-  return (
-    <a
-      href={href}
-      target={href.startsWith("mailto:") ? undefined : "_blank"}
-      rel={href.startsWith("mailto:") ? undefined : "noreferrer"}
-      className={primary ? "editor-button-primary" : "editor-button"}
-    >
-      {children}
-    </a>
-  );
-}
-
-function SignalMeter({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: number;
-  tone: "cyan" | "violet" | "lime";
-}) {
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between gap-3">
-        <span className="mono-label text-[11px] uppercase tracking-[0.2em] text-[color:var(--text-dim)]">
-          {label}
-        </span>
-        <span className="mono-label text-xs text-[color:var(--text-soft)]">{value}%</span>
-      </div>
-      <div className="signal-track">
-        <motion.div
-          initial={{ width: 0 }}
-          whileInView={{ width: `${value}%` }}
-          viewport={{ once: true, amount: 0.6 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className={`signal-fill tone-${tone}`}
-        />
-      </div>
-    </div>
-  );
-}
-
-function HeroConsole() {
-  const reduced = useReducedMotion();
-
-  return (
-    <GlassCard className="hero-monitor rounded-[30px] p-5 sm:p-6">
-      <div className="flex items-center justify-between gap-3 border-b border-[color:var(--border-soft)] pb-4">
-        <div>
-          <div className="mono-label text-[11px] uppercase tracking-[0.24em] text-[color:var(--text-dim)]">
-            live_session.sys
-          </div>
-          <div className="mt-1 text-base font-semibold text-[color:var(--text-main)]">
-            Kinetic glass terminal
-          </div>
-        </div>
-        <div className="flex items-center gap-2 rounded-full border border-[color:var(--border-soft)] bg-[color:var(--chip)] px-3 py-1.5 text-xs text-[color:var(--text-soft)]">
-          <span className="status-pulse" />
-          live
-        </div>
-      </div>
-
-      <div className="relative mt-5 overflow-hidden rounded-[24px] border border-[color:var(--border-soft)] bg-[color:var(--surface-secondary)] p-4">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(50,215,255,0.24),transparent_36%),radial-gradient(circle_at_bottom_left,rgba(139,92,246,0.24),transparent_34%)]" />
-        <div className="relative space-y-4">
-          <CommandLine vibrant>boot workspace --mode kinetic</CommandLine>
-          <TypewriterText items={typewriterLines} />
-
-          <div className="grid gap-3 sm:grid-cols-3">
-            <GlassCard className="tone-cyan rounded-[20px] px-3 py-3 text-center" hover={false}>
-              <div className="mono-label text-[11px] uppercase tracking-[0.18em] text-[color:var(--text-dim)]">
-                focus
-              </div>
-              <div className="mt-2 text-sm font-semibold text-[color:var(--text-main)]">
-                APIs
-              </div>
-            </GlassCard>
-            <GlassCard className="tone-violet rounded-[20px] px-3 py-3 text-center" hover={false}>
-              <div className="mono-label text-[11px] uppercase tracking-[0.18em] text-[color:var(--text-dim)]">
-                layer
-              </div>
-              <div className="mt-2 text-sm font-semibold text-[color:var(--text-main)]">
-                Middleware
-              </div>
-            </GlassCard>
-            <GlassCard className="tone-lime rounded-[20px] px-3 py-3 text-center" hover={false}>
-              <div className="mono-label text-[11px] uppercase tracking-[0.18em] text-[color:var(--text-dim)]">
-                state
-              </div>
-              <div className="mt-2 text-sm font-semibold text-[color:var(--text-main)]">
-                Shipping
-              </div>
-            </GlassCard>
-          </div>
-
-          <div className="space-y-3">
-            {liveSignals.map((signal) => (
-              <SignalMeter key={signal.label} {...signal} />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        <GlassCard className="rounded-[22px] px-4 py-4" hover={false}>
-          <div className="mono-label text-[11px] uppercase tracking-[0.22em] text-[color:var(--text-dim)]">
-            runtime_notes.log
-          </div>
-          <div className="mt-3 space-y-2 text-sm leading-6 text-[color:var(--text-soft)]">
-            <p>Designing data-heavy tools with responsive frontends and practical systems thinking.</p>
-            <p>Balanced between engineering clarity, delivery pace, and maintainable UI patterns.</p>
-          </div>
-        </GlassCard>
-
-        <div className="relative flex min-h-[170px] items-center justify-center overflow-hidden rounded-[22px] border border-[color:var(--border-soft)] bg-[color:var(--surface-secondary)]">
-          <motion.div
-            animate={reduced ? undefined : { rotate: 360 }}
-            transition={reduced ? undefined : { duration: 14, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-            className="hero-orbit hero-orbit-outer"
-          />
-          <motion.div
-            animate={reduced ? undefined : { rotate: -360 }}
-            transition={reduced ? undefined : { duration: 10, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-            className="hero-orbit hero-orbit-inner"
-          />
-          <motion.div
-            animate={reduced ? undefined : { y: [0, -8, 0], scale: [1, 1.04, 1] }}
-            transition={reduced ? undefined : { duration: 3.2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
-            className="hero-core"
-          >
-            AA
-          </motion.div>
-          <span className="hero-node hero-node-a">API</span>
-          <span className="hero-node hero-node-b">UI</span>
-          <span className="hero-node hero-node-c">DATA</span>
-        </div>
-      </div>
-    </GlassCard>
-  );
-}
-
-function EditorHeader({ activeId }: { activeId: string }) {
-  const current = sections.find((section) => section.id === activeId) ?? sections[0];
-
-  return (
-    <header className="editor-shell sticky top-3 z-50 rounded-[28px] px-4 py-3 sm:px-5">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex min-w-0 items-center gap-4">
-          <WindowControls />
-          <div className="min-w-0">
-            <div className="mono-label text-[11px] uppercase tracking-[0.26em] text-[color:var(--text-dim)]">
-              arethusa.workspace
-            </div>
-            <div className="truncate text-sm font-semibold text-[color:var(--text-main)] sm:text-base">
-              {current.fileName}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between lg:justify-end">
-          <div className="mono-label text-xs text-[color:var(--text-dim)]">
-            ~/portfolio/{current.path === "/" ? current.fileName : current.path.slice(1)}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="header-badge">
-              <span className="status-pulse" />
-              available for collaboration
-            </span>
-            <ThemeButton />
-          </div>
-        </div>
-      </div>
-    </header>
-  );
-}
-
-function Sidebar({ activeId }: { activeId: string }) {
-  const reduced = useReducedMotion();
-
-  return (
-    <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
-      <GlassCard className="rounded-[30px] p-4 sm:p-5">
-        <div className="flex items-center justify-between gap-3 border-b border-[color:var(--border-soft)] pb-3">
-          <div>
-            <div className="mono-label text-[11px] uppercase tracking-[0.24em] text-[color:var(--text-dim)]">
-              Explorer
-            </div>
-            <div className="mt-1 text-sm font-semibold text-[color:var(--text-main)]">
-              src/content
-            </div>
-          </div>
-          <div className="mono-label text-xs text-[color:var(--text-dim)]">8 files</div>
-        </div>
-
-        <nav className="mt-4 space-y-2">
-          {sections.map((section, index) => {
-            const Icon = section.icon;
-
-            return (
-              <motion.div
-                key={section.id}
-                initial={reduced ? false : { opacity: 0, x: -10 }}
-                animate={reduced ? undefined : { opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.04, duration: 0.32 }}
-              >
-                <Link
-                  to={section.path}
-                  className={`sidebar-entry ${activeId === section.id ? "sidebar-entry-active" : ""}`}
-                  onPointerMove={updatePointerGlow}
-                >
-                  <span className="sidebar-entry-icon">
-                    <Icon size={16} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-2 text-sm font-medium text-[color:var(--text-main)]">
-                      {section.fileName}
-                    </span>
-                    <span className="mt-1 block text-xs text-[color:var(--text-dim)]">
-                      {section.summary}
-                    </span>
-                  </span>
-                </Link>
-              </motion.div>
-            );
-          })}
-        </nav>
-      </GlassCard>
-
-      <GlassCard className="rounded-[30px] p-4 sm:p-5">
-        <div className="mono-label text-[11px] uppercase tracking-[0.24em] text-[color:var(--text-dim)]">
-          Signal Matrix
-        </div>
-        <div className="mt-4 grid gap-3">
-          <StatTile label="Primary role" value="Full-Stack Developer" tone="cyan" />
-          <StatTile label="Current stack" value="API, middleware, data-heavy systems" tone="violet" />
-          <StatTile label="Preferred vibe" value="Reliable build, kinetic interface" tone="lime" />
-        </div>
-      </GlassCard>
-    </aside>
-  );
-}
-
-function TabStrip({ activeId }: { activeId: string }) {
-  return (
-    <div className="editor-shell overflow-x-auto rounded-[26px] px-2 py-2">
-      <div className="flex min-w-max items-center gap-2">
-        {sections.map((section) => (
-          <Link
-            key={section.id}
-            to={section.path}
-            className={`tab-pill ${activeId === section.id ? "tab-pill-active" : ""}`}
-          >
-            <span className="mono-label text-xs">{section.fileName}</span>
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function SectionShell({
+function SectionPanel({
   id,
   fileName,
   command,
-  title,
   icon,
   children,
 }: {
   id: string;
   fileName: string;
   command: string;
-  title: string;
   icon: ReactNode;
   children: ReactNode;
 }) {
   const reduced = useReducedMotion();
 
   return (
-    <section id={id} className="snap-start scroll-mt-28">
+    <section id={id} className="scroll-mt-16">
       <motion.div
-        initial={reduced ? false : { opacity: 0, y: 22, scale: 0.985 }}
-        whileInView={reduced ? undefined : { opacity: 1, y: 0, scale: 1 }}
-        viewport={{ once: false, amount: 0.18 }}
-        transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+        initial={reduced ? false : { opacity: 0, y: 16 }}
+        whileInView={reduced ? undefined : { opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.1 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       >
-        <GlassCard className="section-shell editor-scan overflow-hidden rounded-[32px]" hover={false}>
-          <div className="flex flex-col gap-3 border-b border-[color:var(--border-soft)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-            <div className="flex min-w-0 items-center gap-3">
-              <WindowControls />
-              <div className="min-w-0">
-                <div className="mono-label text-[11px] uppercase tracking-[0.24em] text-[color:var(--text-dim)]">
-                  {fileName}
-                </div>
-                <div className="mt-1 flex items-center gap-2 text-sm font-semibold text-[color:var(--text-main)] sm:text-base">
-                  <span className="text-[color:var(--accent-cyan)]">{icon}</span>
-                  <span className="truncate">{title}</span>
-                </div>
-              </div>
+        <div className="section-panel">
+          <div className="section-header">
+            <div className="section-filename">
+              <span className="section-filename-icon">{icon}</span>
+              <span>{fileName}</span>
             </div>
-
-            <div className="mono-label truncate text-xs text-[color:var(--text-dim)]">
-              {command}
-            </div>
+            <div className="section-command">{command}</div>
           </div>
 
-          <div className="border-b border-[color:var(--border-soft)] bg-[color:var(--surface-secondary)] px-4 py-2 sm:px-5">
-            <CommandLine vibrant>{command}</CommandLine>
+          <div className="section-body space-y-4">
+            <Prompt command={command} />
+            <TerminalOutput>{children}</TerminalOutput>
           </div>
-
-          <div className="p-4 sm:p-5 lg:p-6">{children}</div>
-        </GlassCard>
+        </div>
       </motion.div>
     </section>
   );
 }
 
-function ProjectCard({
-  name,
-  tech,
-  repo,
-  live,
+function CodeLine({
+  num,
+  children,
 }: {
-  name: string;
-  tech: string[];
-  repo: string;
-  live: string;
-}) {
-  const reduced = useReducedMotion();
-
-  return (
-    <motion.article
-      onPointerMove={updatePointerGlow}
-      whileHover={reduced ? undefined : { y: -8, rotateX: 1.5, rotateY: -1.5 }}
-      transition={{ type: "spring", stiffness: 260, damping: 20 }}
-      className="project-card"
-      style={{ transformPerspective: 1400 } as CSSProperties}
-    >
-      <div className="project-card-stripe" />
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="mono-label text-[11px] uppercase tracking-[0.24em] text-[color:var(--text-dim)]">
-            project
-          </div>
-          <div className="mt-2 text-lg font-semibold text-[color:var(--text-main)]">
-            {name}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <a
-            href={repo}
-            target="_blank"
-            rel="noreferrer"
-            className="icon-link"
-            aria-label={`Open ${name} repository`}
-          >
-            <ExternalLinkIcon size={16} />
-          </a>
-          <a
-            href={live}
-            target="_blank"
-            rel="noreferrer"
-            className="icon-link"
-            aria-label={`Open ${name} live site`}
-          >
-            <ExternalLinkIcon size={16} />
-          </a>
-        </div>
-      </div>
-
-      <p className="mt-3 text-sm leading-6 text-[color:var(--text-soft)]">
-        Built like a working case tile: source, deployment, and stack context all surfaced in one lively panel.
-      </p>
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        {tech.map((item, index) => (
-          <Badge key={item} tone={index % 2 === 0 ? "cyan" : "violet"}>
-            {item}
-          </Badge>
-        ))}
-      </div>
-
-      <div className="mt-5 flex items-center justify-between gap-3 border-t border-[color:var(--border-soft)] pt-4 text-xs text-[color:var(--text-dim)]">
-        <span className="mono-label">repo + live linked</span>
-        <span className="mono-label text-[color:var(--accent-amber)]">active card</span>
-      </div>
-    </motion.article>
-  );
-}
-
-function ExperienceRow({
-  role,
-  company,
-  period,
-}: {
-  role: string;
-  company: string;
-  period: string;
+  num: number;
+  children: ReactNode;
 }) {
   return (
-    <div className="experience-row">
-      <div className="experience-dot" />
-      <div className="experience-line" />
-      <GlassCard className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <div className="text-base font-semibold text-[color:var(--text-main)]">{role}</div>
-            <div className="mt-1 text-sm text-[color:var(--text-soft)]">{company}</div>
-          </div>
-          <div className="mono-label text-xs text-[color:var(--text-dim)]">{period}</div>
-        </div>
-      </GlassCard>
+    <div className="code-line">
+      <span className="line-number">{num}</span>
+      <span className="line-content">{children}</span>
     </div>
   );
 }
 
-function SkillGroup({ label, items }: { label: string; items: string[] }) {
+/* ═══════════════════════════════════════════════════════
+   BOOT SEQUENCE
+   ═══════════════════════════════════════════════════════ */
+
+function BootSequence({ onComplete }: { onComplete: () => void }) {
+  const [visibleLines, setVisibleLines] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const reduced = useReducedMotion();
+
+  useEffect(() => {
+    if (reduced) {
+      onComplete();
+      return;
+    }
+
+    const timers: number[] = [];
+
+    bootLines.forEach((line, i) => {
+      timers.push(
+        window.setTimeout(() => {
+          setVisibleLines(i + 1);
+          setProgress(Math.round(((i + 1) / bootLines.length) * 100));
+        }, line.delay)
+      );
+    });
+
+    timers.push(
+      window.setTimeout(() => {
+        onComplete();
+      }, 2400)
+    );
+
+    return () => timers.forEach(clearTimeout);
+  }, [onComplete, reduced]);
+
   return (
-    <GlassCard className="rounded-[28px] p-4 sm:p-5">
-      <div className="flex items-center justify-between gap-3">
-        <div className="mono-label text-[11px] uppercase tracking-[0.24em] text-[color:var(--text-dim)]">
-          {label}
+    <motion.div
+      className="boot-screen"
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <div className="w-full max-w-lg space-y-0">
+        {bootLines.slice(0, visibleLines).map((line, i) => (
+          <motion.div
+            key={i}
+            className="boot-line"
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.15 }}
+          >
+            {line.text.includes("[OK]") ? (
+              <>
+                {line.text.replace("[OK]", "")}
+                <span className="ok">[OK]</span>
+              </>
+            ) : line.text.includes("✓") ? (
+              <span className="ok">{line.text}</span>
+            ) : line.text === "" ? (
+              <br />
+            ) : (
+              line.text
+            )}
+          </motion.div>
+        ))}
+
+        <div className="boot-progress mt-4">
+          <div
+            className="boot-progress-bar"
+            style={{ width: `${progress}%` }}
+          />
         </div>
-        <span className="rounded-full bg-[color:var(--chip)] px-3 py-1 text-[11px] text-[color:var(--accent-violet)]">
-          {items.length} items
-        </span>
-      </div>
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
-        {items.map((item, index) => {
-          const Icon = techIcons[item];
-          const tone = index % 3 === 0 ? "cyan" : index % 3 === 1 ? "violet" : "lime";
 
-          return (
-            <GlassCard
-              key={item}
-              className={`tone-${tone} rounded-[22px] px-3 py-3 text-center`}
-            >
-              <div className="flex justify-center text-[color:var(--accent-cyan)]">
-                {Icon ? <Icon size={24} /> : null}
-              </div>
-              <div className="mt-2 text-xs font-medium leading-5 text-[color:var(--text-main)] sm:text-sm">
-                {item}
-              </div>
-            </GlassCard>
-          );
-        })}
+        <div className="mt-2 text-xs text-dim">
+          {progress}% — {progress < 100 ? "Loading..." : "Ready"}
+        </div>
       </div>
-    </GlassCard>
+    </motion.div>
   );
 }
 
-function CertificateCard({
-  title,
-  issuer,
-  year,
-  href,
-}: {
-  title: string;
-  issuer: string;
-  year: string;
-  href: string;
-}) {
+/* ═══════════════════════════════════════════════════════
+   HEADER
+   ═══════════════════════════════════════════════════════ */
+
+function Header({ activeId }: { activeId: string }) {
+  const current = sections.find((s) => s.id === activeId) ?? sections[0];
+
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-      className="glass-link-card"
-      onPointerMove={updatePointerGlow}
-    >
-      <div className="mono-label text-[11px] uppercase tracking-[0.24em] text-[color:var(--text-dim)]">
-        verified credential
+    <header className="main-header">
+      <div className="main-header-inner">
+        <div className="flex items-center gap-3">
+          <TerminalDots />
+          <span className="text-secondary text-xs hidden sm:inline">
+            arethusa@dev:~/portfolio/{current.fileName}
+          </span>
+          <span className="text-secondary text-xs sm:hidden">
+            ~/{current.fileName}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <span className="status-badge status-badge--green">
+            <span className="status-dot" />
+            <span className="hidden sm:inline">available for hire</span>
+            <span className="sm:hidden">online</span>
+          </span>
+        </div>
       </div>
-      <div className="mt-3 text-base font-semibold leading-7 text-[color:var(--text-main)]">
-        {title}
-      </div>
-      <div className="mt-2 text-sm text-[color:var(--text-soft)]">
-        {issuer} · {year}
-      </div>
-    </a>
+    </header>
   );
 }
 
-function SocialCard({ label, href }: { label: string; href: string }) {
-  const Icon = socialIcons[label];
+/* ═══════════════════════════════════════════════════════
+   TAB BAR
+   ═══════════════════════════════════════════════════════ */
 
+function TabBar({ activeId }: { activeId: string }) {
   return (
-    <a
-      href={href}
-      target={href.startsWith("mailto:") ? undefined : "_blank"}
-      rel={href.startsWith("mailto:") ? undefined : "noreferrer"}
-      className="glass-link-card"
-      onPointerMove={updatePointerGlow}
-    >
-      <div className="flex items-center gap-3">
-        <span className="rounded-xl border border-[color:var(--border-soft)] bg-[color:var(--chip)] p-2 text-[color:var(--accent-cyan)]">
-          {Icon ? <Icon size={20} /> : null}
-        </span>
-        <div>
-          <div className="text-sm font-semibold text-[color:var(--text-main)]">{label}</div>
-          <div className="mt-1 break-all text-xs text-[color:var(--text-dim)]">
-            {href.replace("mailto:", "").replace("https://", "")}
+    <div className="tab-bar">
+      {sections.map((s) => (
+        <Link
+          key={s.id}
+          to={s.path}
+          className={`tab-item ${activeId === s.id ? "tab-item--active" : ""}`}
+        >
+          {s.fileName}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   SIDEBAR
+   ═══════════════════════════════════════════════════════ */
+
+function Sidebar({ activeId }: { activeId: string }) {
+  return (
+    <aside className="space-y-3 xl:sticky xl:top-14 xl:self-start">
+      {/* Explorer */}
+      <div className="sidebar-panel">
+        <div className="sidebar-title">Explorer</div>
+        <nav className="py-1">
+          {sections.map((s) => {
+            const Icon = s.icon;
+            return (
+              <Link
+                key={s.id}
+                to={s.path}
+                className={`sidebar-item ${activeId === s.id ? "sidebar-item--active" : ""}`}
+              >
+                <span className="sidebar-item-icon">
+                  <Icon size={14} />
+                </span>
+                <span className="sidebar-item-name">{s.fileName}</span>
+                <span className="sidebar-item-meta">{s.summary}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Quick Info */}
+      <div className="sidebar-panel">
+        <div className="sidebar-title">Process Info</div>
+        <div className="p-3 space-y-3 text-xs">
+          <div>
+            <span className="text-dim">PID:</span>{" "}
+            <span className="text-green">1337</span>
+          </div>
+          <div>
+            <span className="text-dim">Role:</span>{" "}
+            <span className="text-cyan">Full-Stack Developer</span>
+          </div>
+          <div>
+            <span className="text-dim">Experience:</span>{" "}
+            <span className="text-amber">5+ years</span>
+          </div>
+          <div>
+            <span className="text-dim">Stack:</span>{" "}
+            <span className="text-purple">20+ technologies</span>
+          </div>
+          <div>
+            <span className="text-dim">Status:</span>{" "}
+            <span className="text-green">● Running</span>
+          </div>
+          <div>
+            <span className="text-dim">Uptime:</span>{" "}
+            <UptimeCounter />
           </div>
         </div>
       </div>
-    </a>
+    </aside>
   );
 }
+
+function UptimeCounter() {
+  const [seconds, setSeconds] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => setSeconds((s) => s + 1), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  return <span className="text-string">{pad(h)}:{pad(m)}:{pad(s)}</span>;
+}
+
+/* ═══════════════════════════════════════════════════════
+   HERO SECTION
+   ═══════════════════════════════════════════════════════ */
+
+function HeroSection() {
+  const reduced = useReducedMotion();
+
+  return (
+    <section id="top" className="scroll-mt-16">
+      <div className="section-panel">
+        <div className="section-header">
+          <div className="section-filename">
+            <span className="section-filename-icon">
+              <CodeIcon size={14} />
+            </span>
+            <span>intro.tsx</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="status-badge status-badge--green">
+              <span className="status-dot" />
+              live
+            </span>
+          </div>
+        </div>
+
+        <div className="section-body">
+          <Prompt command="npx arethusa --intro --live" />
+
+          <TerminalOutput className="mt-4 space-y-6">
+            {/* ASCII Art Name */}
+            <motion.pre
+              className="ascii-art"
+              initial={reduced ? false : { opacity: 0 }}
+              animate={reduced ? undefined : { opacity: 1 }}
+              transition={{ duration: 1, delay: 0.2 }}
+            >
+              {ASCII_ART}
+            </motion.pre>
+
+            {/* Bio as code */}
+            <motion.div
+              className="code-block"
+              initial={reduced ? false : { opacity: 0, y: 10 }}
+              animate={reduced ? undefined : { opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+            >
+              <CodeLine num={1}>
+                <span className="syn-keyword">const</span>{" "}
+                <span className="syn-variable">developer</span>{" "}
+                <span className="syn-operator">=</span>{" "}
+                <span className="syn-bracket">{"{"}</span>
+              </CodeLine>
+              <CodeLine num={2}>
+                {"  "}
+                <span className="syn-property">name</span>
+                <span className="syn-punctuation">:</span>{" "}
+                <span className="syn-string">"Arethusa Aryandhana"</span>
+                <span className="syn-punctuation">,</span>
+              </CodeLine>
+              <CodeLine num={3}>
+                {"  "}
+                <span className="syn-property">title</span>
+                <span className="syn-punctuation">:</span>{" "}
+                <span className="syn-string">"Full-Stack Developer"</span>
+                <span className="syn-punctuation">,</span>
+              </CodeLine>
+              <CodeLine num={4}>
+                {"  "}
+                <span className="syn-property">focus</span>
+                <span className="syn-punctuation">:</span>{" "}
+                <span className="syn-bracket">[</span>
+                <span className="syn-string">"APIs"</span>
+                <span className="syn-punctuation">,</span>{" "}
+                <span className="syn-string">"Middleware"</span>
+                <span className="syn-punctuation">,</span>{" "}
+                <span className="syn-string">"Data Systems"</span>
+                <span className="syn-bracket">]</span>
+                <span className="syn-punctuation">,</span>
+              </CodeLine>
+              <CodeLine num={5}>
+                {"  "}
+                <span className="syn-property">location</span>
+                <span className="syn-punctuation">:</span>{" "}
+                <span className="syn-string">"Indonesia"</span>
+                <span className="syn-punctuation">,</span>
+              </CodeLine>
+              <CodeLine num={6}>
+                {"  "}
+                <span className="syn-property">available</span>
+                <span className="syn-punctuation">:</span>{" "}
+                <span className="syn-number">true</span>
+                <span className="syn-punctuation">,</span>
+              </CodeLine>
+              <CodeLine num={7}>
+                <span className="syn-bracket">{"}"}</span>
+                <span className="syn-punctuation">;</span>
+              </CodeLine>
+            </motion.div>
+
+            {/* Description */}
+            <motion.div
+              className="text-secondary text-sm leading-7 max-w-2xl"
+              initial={reduced ? false : { opacity: 0 }}
+              animate={reduced ? undefined : { opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.7 }}
+            >
+              <span className="syn-comment">
+                {"// "}Full-stack developer focused on dependable product delivery,
+                <br />
+                {"// "}API architecture, middleware orchestration, and business
+                <br />
+                {"// "}workflows that need both clarity and momentum.
+              </span>
+            </motion.div>
+
+            {/* Typewriter */}
+            <motion.div
+              initial={reduced ? false : { opacity: 0 }}
+              animate={reduced ? undefined : { opacity: 1 }}
+              transition={{ duration: 0.4, delay: 0.9 }}
+            >
+              <TypewriterText items={typewriterPhrases} />
+            </motion.div>
+
+            {/* Stats */}
+            <motion.div
+              className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+              initial={reduced ? false : { opacity: 0, y: 10 }}
+              animate={reduced ? undefined : { opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 1.1 }}
+            >
+              {[
+                { label: "years_exp", value: "5+", color: "text-green" },
+                { label: "tech_stack", value: "20+", color: "text-cyan" },
+                { label: "certificates", value: "05", color: "text-amber" },
+                { label: "roles_held", value: "05", color: "text-purple" },
+              ].map((stat) => (
+                <div key={stat.label} className="terminal-card text-center">
+                  <div className="text-dim text-xs uppercase tracking-wider">
+                    {stat.label}
+                  </div>
+                  <div className={`text-2xl font-bold mt-1 ${stat.color}`}>
+                    {stat.value}
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+
+            {/* CTA Buttons */}
+            <motion.div
+              className="flex flex-wrap gap-3"
+              initial={reduced ? false : { opacity: 0 }}
+              animate={reduced ? undefined : { opacity: 1 }}
+              transition={{ duration: 0.4, delay: 1.3 }}
+            >
+              <Link to="/projects" className="btn-terminal btn-terminal--primary">
+                ./view-projects.sh
+              </Link>
+              <Link to="/contact-person" className="btn-terminal">
+                ./contact.sh --open
+              </Link>
+            </motion.div>
+          </TerminalOutput>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   PROJECT SECTION
+   ═══════════════════════════════════════════════════════ */
+
+function ProjectsSection() {
+  return (
+    <SectionPanel
+      id="projects"
+      fileName="projects.ts"
+      command="ls -la ./projects --featured"
+      icon={<CodeIcon size={14} />}
+    >
+      {/* Table header */}
+      <div className="text-xs text-dim mb-3 hidden sm:block">
+        <span>total {projects.length} projects</span>
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+        {projects.map((p, i) => (
+          <motion.div
+            key={p.name}
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: i * 0.1, duration: 0.4 }}
+          >
+            <div className="terminal-card">
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <div>
+                  <div className="text-xs text-dim">
+                    drwxr-xr-x {i + 1} arethusa dev
+                  </div>
+                  <div className="text-base font-bold mt-1 text-green">
+                    {p.name}/
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <a
+                    href={p.repo}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-dim hover:text-cyan transition-colors"
+                    aria-label={`${p.name} repository`}
+                  >
+                    <ExternalLinkIcon size={14} />
+                  </a>
+                  <a
+                    href={p.live}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-dim hover:text-green transition-colors"
+                    aria-label={`${p.name} live site`}
+                  >
+                    <ExternalLinkIcon size={14} />
+                  </a>
+                </div>
+              </div>
+
+              <p className="text-secondary text-xs leading-5 mb-3">
+                {p.desc}
+              </p>
+
+              <div className="flex flex-wrap gap-1.5">
+                {p.tech.map((t) => (
+                  <span key={t} className="status-badge status-badge--cyan text-[10px]">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </SectionPanel>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   EXPERIENCE SECTION (git log style)
+   ═══════════════════════════════════════════════════════ */
+
+function ExperienceSection() {
+  return (
+    <SectionPanel
+      id="experience"
+      fileName="experience.log"
+      command="git log --oneline --graph career.log"
+      icon={<BriefcaseIcon size={14} />}
+    >
+      <div className="space-y-4">
+        {experience.map((exp, i) => (
+          <motion.div
+            key={`${exp.role}-${exp.company}`}
+            className="timeline-item"
+            initial={{ opacity: 0, x: -12 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: i * 0.08, duration: 0.4 }}
+          >
+            <div className="timeline-dot" />
+            {i < experience.length - 1 && <div className="timeline-line" />}
+
+            <div className="terminal-card terminal-card-cyan">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1">
+                <div>
+                  <div className="flex items-center gap-2 text-xs mb-1">
+                    <span className="text-amber">commit</span>
+                    <span className="text-string">{exp.hash}</span>
+                  </div>
+                  <div className="font-bold text-sm">{exp.role}</div>
+                  <div className="text-secondary text-xs mt-0.5">
+                    @ {exp.company}
+                  </div>
+                </div>
+                <div className="text-dim text-xs whitespace-nowrap">
+                  {exp.period}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </SectionPanel>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   SKILLS SECTION (JSON + progress bars)
+   ═══════════════════════════════════════════════════════ */
+
+function SkillsSection() {
+  const toneMap: Record<string, string> = {
+    Frontend: "green",
+    Backend: "cyan",
+    Data: "purple",
+    Platform: "amber",
+  };
+
+  return (
+    <SectionPanel
+      id="skills"
+      fileName="stack.json"
+      command="cat stack.json | jq '.skills'"
+      icon={<SkillsIcon size={14} />}
+    >
+      <div className="grid gap-4 xl:grid-cols-2">
+        {skillGroups.map((group) => {
+          const tone = toneMap[group.label] || "green";
+          return (
+            <div key={group.label} className="terminal-card">
+              <div className="flex items-center justify-between mb-3">
+                <span className={`text-${tone} font-bold text-sm`}>
+                  "{group.label}"
+                </span>
+                <span className="text-dim text-xs">
+                  [{group.items.length} items]
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {group.items.map((item) => {
+                  const Icon = techIcons[item.name];
+                  return (
+                    <div key={item.name}>
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <div className="flex items-center gap-2">
+                          {Icon && (
+                            <span className="text-cyan">
+                              <Icon size={14} />
+                            </span>
+                          )}
+                          <span className="text-xs">{item.name}</span>
+                        </div>
+                        <span className={`text-${tone} text-xs`}>
+                          {item.level}%
+                        </span>
+                      </div>
+                      <div className="skill-bar">
+                        <motion.div
+                          className={`skill-bar-fill skill-bar-fill--${tone}`}
+                          initial={{ width: 0 }}
+                          whileInView={{ width: `${item.level}%` }}
+                          viewport={{ once: true, amount: 0.6 }}
+                          transition={{
+                            duration: 0.8,
+                            ease: [0.16, 1, 0.3, 1],
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </SectionPanel>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   CERTIFICATES SECTION
+   ═══════════════════════════════════════════════════════ */
+
+function CertificatesSection() {
+  return (
+    <SectionPanel
+      id="certificates"
+      fileName="certs.md"
+      command="cat certs.md --verified"
+      icon={<CertificateIcon size={14} />}
+    >
+      <div className="code-block">
+        <CodeLine num={1}>
+          <span className="syn-comment"># Verified Credentials</span>
+        </CodeLine>
+        <CodeLine num={2}>{""}</CodeLine>
+
+        {certificates.map((cert, i) => (
+          <a
+            key={cert.title}
+            href={cert.href}
+            target="_blank"
+            rel="noreferrer"
+            className="block hover:bg-[rgba(86,212,221,0.04)] transition-colors rounded"
+          >
+            <CodeLine num={i + 3}>
+              <span className="syn-keyword">##</span>{" "}
+              <span className="syn-function">{cert.title}</span>
+            </CodeLine>
+            <CodeLine num={i + 3}>
+              {"  "}
+              <span className="syn-comment">
+                issuer: {cert.issuer} · year: {cert.year}
+              </span>
+              {"  "}
+              <span className="text-green text-xs">✓ verified</span>
+            </CodeLine>
+          </a>
+        ))}
+      </div>
+    </SectionPanel>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   EDUCATION SECTION (YAML style)
+   ═══════════════════════════════════════════════════════ */
+
+function EducationSection() {
+  return (
+    <SectionPanel
+      id="education"
+      fileName="education.yml"
+      command="cat education.yml"
+      icon={<GraduationIcon size={14} />}
+    >
+      <div className="code-block">
+        <CodeLine num={1}>
+          <span className="syn-comment"># Academic Background</span>
+        </CodeLine>
+        <CodeLine num={2}>
+          <span className="syn-tag">education</span>
+          <span className="syn-punctuation">:</span>
+        </CodeLine>
+        <CodeLine num={3}>
+          {"  "}<span className="syn-property">degree</span>
+          <span className="syn-punctuation">:</span>{" "}
+          <span className="syn-string">"B.Sc. Computer Science"</span>
+        </CodeLine>
+        <CodeLine num={4}>
+          {"  "}<span className="syn-property">university</span>
+          <span className="syn-punctuation">:</span>{" "}
+          <span className="syn-string">"Surabaya University"</span>
+        </CodeLine>
+        <CodeLine num={5}>
+          {"  "}<span className="syn-property">period</span>
+          <span className="syn-punctuation">:</span>{" "}
+          <span className="syn-string">"2015 - 2019"</span>
+        </CodeLine>
+        <CodeLine num={6}>
+          {"  "}<span className="syn-property">status</span>
+          <span className="syn-punctuation">:</span>{" "}
+          <span className="syn-number">completed</span>
+        </CodeLine>
+        <CodeLine num={7}>
+          {"  "}<span className="syn-property">gpa_status</span>
+          <span className="syn-punctuation">:</span>{" "}
+          <span className="syn-string">"graduated"</span>
+        </CodeLine>
+      </div>
+    </SectionPanel>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   CONTACT SECTION (shell script style)
+   ═══════════════════════════════════════════════════════ */
+
+function ContactSection() {
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
+
+  const copyEmail = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText("ryan.arethusa@gmail.com");
+      setCopyState("copied");
+      window.setTimeout(() => setCopyState("idle"), 1500);
+    } catch {
+      setCopyState("error");
+      window.setTimeout(() => setCopyState("idle"), 1500);
+    }
+  }, []);
+
+  return (
+    <SectionPanel
+      id="contact"
+      fileName="contact.sh"
+      command="bash contact.sh --open"
+      icon={<ContactIcon size={14} />}
+    >
+      <div className="code-block mb-4">
+        <CodeLine num={1}>
+          <span className="syn-comment">#!/bin/bash</span>
+        </CodeLine>
+        <CodeLine num={2}>
+          <span className="syn-comment"># Primary contact channel</span>
+        </CodeLine>
+        <CodeLine num={3}>{""}</CodeLine>
+        <CodeLine num={4}>
+          <span className="syn-keyword">export</span>{" "}
+          <span className="syn-variable">EMAIL</span>
+          <span className="syn-operator">=</span>
+          <span className="syn-string">"ryan.arethusa@gmail.com"</span>
+        </CodeLine>
+        <CodeLine num={5}>{""}</CodeLine>
+        <CodeLine num={6}>
+          <span className="syn-function">echo</span>{" "}
+          <span className="syn-string">"Best for collaboration, freelance"</span>
+        </CodeLine>
+        <CodeLine num={7}>
+          <span className="syn-function">echo</span>{" "}
+          <span className="syn-string">"opportunities, and engineering discussions."</span>
+        </CodeLine>
+      </div>
+
+      <div className="flex flex-wrap gap-3">
+        <a
+          href="mailto:ryan.arethusa@gmail.com"
+          className="btn-terminal btn-terminal--primary"
+        >
+          $ mailto $EMAIL
+        </a>
+        <button type="button" onClick={copyEmail} className="btn-terminal">
+          {copyState === "idle"
+            ? "$ echo $EMAIL | pbcopy"
+            : copyState === "copied"
+            ? "✓ Copied!"
+            : "✗ Failed"}
+        </button>
+      </div>
+    </SectionPanel>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   SOCIAL SECTION (env variables style)
+   ═══════════════════════════════════════════════════════ */
+
+function SocialSection() {
+  return (
+    <SectionPanel
+      id="social"
+      fileName=".env.social"
+      command="source .env.social && echo $LINKS"
+      icon={<SocialIcon size={14} />}
+    >
+      <div className="code-block mb-4">
+        <CodeLine num={1}>
+          <span className="syn-comment"># Social & Public Profiles</span>
+        </CodeLine>
+        {socials.map((s, i) => {
+          const Icon = socialIcons[s.label];
+          return (
+            <a
+              key={s.label}
+              href={s.href}
+              target={s.href.startsWith("mailto:") ? undefined : "_blank"}
+              rel={s.href.startsWith("mailto:") ? undefined : "noreferrer"}
+              className="block hover:bg-[rgba(0,255,159,0.04)] transition-colors rounded"
+            >
+              <CodeLine num={i + 2}>
+                <span className="syn-keyword">export</span>{" "}
+                <span className="syn-variable">{s.envKey}</span>
+                <span className="syn-operator">=</span>
+                <span className="syn-string">
+                  "{s.href.replace("mailto:", "").replace("https://", "")}"
+                </span>
+                {Icon && (
+                  <span className="ml-2 text-cyan inline-flex align-middle">
+                    <Icon size={12} />
+                  </span>
+                )}
+              </CodeLine>
+            </a>
+          );
+        })}
+      </div>
+
+      <div className="text-dim text-xs border-t border-[var(--border-dim)] pt-3 mt-4">
+        © {new Date().getFullYear()} Arethusa Aryandhana — Built with React + TypeScript
+      </div>
+    </SectionPanel>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   STATUS BAR (bottom footer)
+   ═══════════════════════════════════════════════════════ */
+
+function StatusBar() {
+  return (
+    <footer className="terminal-footer">
+      <div className="flex items-center gap-4">
+        <span className="text-green">● main</span>
+        <span>UTF-8</span>
+        <span>TypeScript React</span>
+      </div>
+      <div className="flex items-center gap-4">
+        <span>Ln 1, Col 1</span>
+        <span>Spaces: 2</span>
+      </div>
+    </footer>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   MAIN PAGE
+   ═══════════════════════════════════════════════════════ */
 
 function HomePage() {
   const { activeId } = useActiveSection();
 
   return (
-    <div className="kinetic-stage relative min-h-dvh px-3 pb-6 pt-3 sm:px-4 sm:pt-4">
-      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="backdrop-orb orb-a" />
-        <div className="backdrop-orb orb-b" />
-        <div className="backdrop-orb orb-c" />
-        <div className="noise-overlay" />
-      </div>
+    <div className="min-h-dvh flex flex-col">
+      <MatrixRain />
+      <Header activeId={activeId} />
 
-      <a
-        href="#projects"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-xl focus:bg-[color:var(--accent-cyan)] focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-slate-950"
-      >
-        Skip to projects
-      </a>
+      <div className="flex-1 flex flex-col">
+        <div className="mx-auto w-full max-w-[1400px] flex-1 grid gap-0 xl:grid-cols-[240px_minmax(0,1fr)]">
+          {/* Sidebar — desktop only */}
+          <div className="hidden xl:block border-r border-[var(--border-dim)] overflow-y-auto">
+            <div className="p-3">
+              <Sidebar activeId={activeId} />
+            </div>
+          </div>
 
-      <div className="mx-auto flex max-w-[1520px] flex-col gap-4">
-        <EditorHeader activeId={activeId} />
+          {/* Main content */}
+          <div className="flex flex-col min-w-0">
+            <TabBar activeId={activeId} />
 
-        <div className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
-          <Sidebar activeId={activeId} />
-
-          <div className="min-w-0 space-y-4">
-            <TabStrip activeId={activeId} />
-
-            <main className="editor-shell overflow-hidden rounded-[34px]">
-              <div className="flex flex-col gap-2 border-b border-[color:var(--border-soft)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-                <div>
-                  <div className="mono-label text-[11px] uppercase tracking-[0.24em] text-[color:var(--text-dim)]">
-                    workspace
-                  </div>
-                  <div className="mt-1 text-sm font-semibold text-[color:var(--text-main)] sm:text-base">
-                    kinetic glass terminal shell
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2 text-xs text-[color:var(--text-dim)]">
-                  <Badge tone="cyan">react</Badge>
-                  <Badge tone="violet">framer motion</Badge>
-                  <Badge tone="lime">interactive depth</Badge>
-                </div>
-              </div>
-
-              <div className="space-y-5 p-3 sm:p-4 lg:p-5">
-                <SectionShell
-                  id="top"
-                  fileName="intro.tsx"
-                  command="npx arethusa --intro --live"
-                  title="Developer Workspace"
-                  icon={<CodeIcon size={18} />}
-                >
-                  <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-                    <div className="space-y-6">
-                      <div className="space-y-4">
-                        <Badge tone="violet">kinetic glass terminal</Badge>
-                        <CommandLine vibrant>whoami --focus systems --mood energetic</CommandLine>
-                        <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-[color:var(--text-main)] sm:text-5xl xl:text-6xl">
-                          Building <span className="gradient-text">reliable systems</span> with a more alive interface.
-                        </h1>
-                        <p className="max-w-2xl text-base leading-8 text-[color:var(--text-soft)] sm:text-lg">
-                          Full-stack developer focused on dependable product delivery,
-                          API architecture, middleware orchestration, and business workflows
-                          that need both clarity and momentum.
-                        </p>
-                        <TypewriterText items={typewriterLines} />
-                      </div>
-
-                      <div className="grid gap-3 sm:grid-cols-3">
-                        {overviewStats.map((item) => (
-                          <MetricCard key={item.label} label={item.label} value={item.value} />
-                        ))}
-                      </div>
-
-                      <div className="flex flex-wrap gap-2">
-                        {["React", "Vue", "Docker", "Kubernetes", "Postgres"].map(
-                          (item, index) => (
-                            <Badge
-                              key={item}
-                              tone={index % 3 === 0 ? "cyan" : index % 3 === 1 ? "violet" : "lime"}
-                            >
-                              {item}
-                            </Badge>
-                          ),
-                        )}
-                      </div>
-
-                      <div className="flex flex-wrap gap-3">
-                        <Link to="/projects" className="editor-button-primary">
-                          Open projects
-                        </Link>
-                        <Link to="/contact-person" className="editor-button">
-                          Open contact
-                        </Link>
-                      </div>
-                    </div>
-
-                    <HeroConsole />
-                  </div>
-                </SectionShell>
-
-                <SectionShell
-                  id="projects"
-                  fileName="projects.ts"
-                  command="ls ./projects --featured --interactive"
-                  title="Featured Projects"
-                  icon={<CodeIcon size={18} />}
-                >
-                  <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
-                    {projects.map((project) => (
-                      <ProjectCard key={project.name} {...project} />
-                    ))}
-                  </div>
-                </SectionShell>
-
-                <SectionShell
-                  id="experience"
-                  fileName="experience.log"
-                  command="cat experience.log | tail -n 5"
-                  title="Experience Timeline"
-                  icon={<BriefcaseIcon size={18} />}
-                >
-                  <div className="space-y-4">
-                    {experience.map((item) => (
-                      <ExperienceRow key={`${item.role}-${item.company}`} {...item} />
-                    ))}
-                  </div>
-                </SectionShell>
-
-                <SectionShell
-                  id="skills"
-                  fileName="stack.json"
-                  command="parse stack.json --grouped --visual"
-                  title="Engineering Stack"
-                  icon={<SkillsIcon size={18} />}
-                >
-                  <div className="grid gap-4 xl:grid-cols-2">
-                    {skillGroups.map((group) => (
-                      <SkillGroup key={group.label} label={group.label} items={group.items} />
-                    ))}
-                  </div>
-                </SectionShell>
-
-                <SectionShell
-                  id="certificates"
-                  fileName="certifications.md"
-                  command="open certifications.md --verified"
-                  title="Certificates"
-                  icon={<CertificateIcon size={18} />}
-                >
-                  <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
-                    {certificates.map((certificate) => (
-                      <CertificateCard key={certificate.title} {...certificate} />
-                    ))}
-                  </div>
-                </SectionShell>
-
-                <SectionShell
-                  id="education"
-                  fileName="education.yml"
-                  command="cat education.yml --timeline"
-                  title="Education"
-                  icon={<GraduationIcon size={18} />}
-                >
-                  <GlassCard className="rounded-[30px] p-5 sm:p-6">
-                    <div className="mono-label text-[11px] uppercase tracking-[0.24em] text-[color:var(--text-dim)]">
-                      degree
-                    </div>
-                    <div className="mt-3 text-xl font-semibold text-[color:var(--text-main)]">
-                      B.Sc. Computer Science
-                    </div>
-                    <div className="mt-2 text-sm leading-7 text-[color:var(--text-soft)]">
-                      Surabaya University · 2015 - 2019
-                    </div>
-                  </GlassCard>
-                </SectionShell>
-
-                <SectionShell
-                  id="contact"
-                  fileName="contact.sh"
-                  command="./contact.sh --open --collab"
-                  title="Contact"
-                  icon={<ContactIcon size={18} />}
-                >
-                  <div className="grid gap-4 lg:grid-cols-[1fr_auto]">
-                    <GlassCard className="rounded-[30px] p-5 sm:p-6">
-                      <div className="mono-label text-[11px] uppercase tracking-[0.24em] text-[color:var(--text-dim)]">
-                        primary channel
-                      </div>
-                      <div className="mt-3 break-all text-xl font-semibold text-[color:var(--text-main)] sm:text-2xl">
-                        ryan.arethusa@gmail.com
-                      </div>
-                      <p className="mt-3 text-sm leading-7 text-[color:var(--text-soft)]">
-                        Best for collaboration, freelance opportunities, and engineering discussions.
-                      </p>
-                    </GlassCard>
-
-                    <div className="flex flex-wrap items-stretch gap-3 lg:flex-col">
-                      <ActionLink href="mailto:ryan.arethusa@gmail.com" primary>
-                        Send email
-                      </ActionLink>
-                      <CopyEmailButton email="ryan.arethusa@gmail.com" />
-                    </div>
-                  </div>
-                </SectionShell>
-
-                <SectionShell
-                  id="social"
-                  fileName="links.env"
-                  command="source links.env --public"
-                  title="Social Links"
-                  icon={<SocialIcon size={18} />}
-                >
-                  <div className="grid gap-4 lg:grid-cols-3">
-                    {socials.map((social) => (
-                      <SocialCard key={social.label} label={social.label} href={social.href} />
-                    ))}
-                  </div>
-
-                  <GlassCard className="mt-6 rounded-[24px] px-4 py-3 text-xs text-[color:var(--text-dim)]" hover={false}>
-                    © {new Date().getFullYear()} Arethusa Aryandhana
-                  </GlassCard>
-                </SectionShell>
-              </div>
+            <main className="flex-1 p-3 sm:p-4 lg:p-5 space-y-4">
+              <HeroSection />
+              <ProjectsSection />
+              <ExperienceSection />
+              <SkillsSection />
+              <CertificatesSection />
+              <EducationSection />
+              <ContactSection />
+              <SocialSection />
             </main>
           </div>
         </div>
       </div>
+
+      <StatusBar />
     </div>
   );
 }
 
-function CopyEmailButton({ email }: { email: string }) {
-  const [state, setState] = useState<"idle" | "copied" | "error">("idle");
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(email);
-      setState("copied");
-      window.setTimeout(() => setState("idle"), 1200);
-    } catch {
-      setState("error");
-      window.setTimeout(() => setState("idle"), 1200);
-    }
-  }
-
-  return (
-    <button type="button" onClick={copy} className="editor-button">
-      {state === "idle" ? "Copy email" : state === "copied" ? "Copied" : "Failed"}
-    </button>
-  );
-}
+/* ═══════════════════════════════════════════════════════
+   APP ROOT
+   ═══════════════════════════════════════════════════════ */
 
 export default function App() {
+  useTheme();
   const location = useLocation();
   const reduced = useReducedMotion();
 
+  const [booted, setBooted] = useState(() => {
+    // Only show boot once per session
+    return sessionStorage.getItem("aa-booted") === "true";
+  });
+
+  const handleBootComplete = useCallback(() => {
+    sessionStorage.setItem("aa-booted", "true");
+    setBooted(true);
+  }, []);
+
   return (
     <AnimatePresence mode="wait">
-      <motion.div
-        key={location.pathname}
-        initial={reduced ? false : { opacity: 0 }}
-        animate={reduced ? undefined : { opacity: 1 }}
-        exit={reduced ? undefined : { opacity: 0 }}
-        transition={{ duration: 0.22, ease: "easeOut" }}
-      >
-        <Routes location={location}>
-          <Route path="*" element={<HomePage />} />
-        </Routes>
-      </motion.div>
+      {!booted ? (
+        <BootSequence key="boot" onComplete={handleBootComplete} />
+      ) : (
+        <motion.div
+          key={location.pathname}
+          initial={reduced ? false : { opacity: 0 }}
+          animate={reduced ? undefined : { opacity: 1 }}
+          exit={reduced ? undefined : { opacity: 0 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+        >
+          <Routes location={location}>
+            <Route path="*" element={<HomePage />} />
+          </Routes>
+        </motion.div>
+      )}
     </AnimatePresence>
   );
 }
