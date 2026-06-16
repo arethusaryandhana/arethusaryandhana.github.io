@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Arethusa Aryandhana | Portfolio</title>
+    <script>
+      // GitHub Pages SPA redirect (clean URLs)
+      // https://github.com/rafgraph/spa-github-pages
+      ;(function (l) {
+        if (l.pathname === "/") return
+        var pathSegmentsToKeep = 0
+        var repoPath = l.pathname
+          .split("/")
+          .slice(0, 1 + pathSegmentsToKeep)
+          .join("/")
+          .replace(/\/$/, "")
+
+        var newPath = l.pathname
+          .split("/")
+          .slice(1 + pathSegmentsToKeep)
+          .join("/")
+
+        l.replace(
+          l.protocol +
+            "//" +
+            l.hostname +
+            (l.port ? ":" + l.port : "") +
+            repoPath +
+            "/?\/" +
+            newPath.replace(/&/g, "~and~") +
+            (l.search ? "&" + l.search.slice(1).replace(/&/g, "~and~") : "") +
+            l.hash,
+        )
+      })(window.location)
+    </script>
+  </head>
+  <body></body>
+</html>
