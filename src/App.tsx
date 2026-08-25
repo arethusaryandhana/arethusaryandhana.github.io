@@ -158,20 +158,13 @@ const skillGroups = [
   },
 ];
 
-const typewriterPhrases = [
-  "Building reliable digital systems",
-  "Crafting seamless user experiences",
-  "Engineering APIs that just work",
-  "Designing data flows with clarity",
-];
-
 const bootLines = [
-  { text: "[sys] Initializing arethusa.dev v2.0...", delay: 0 },
-  { text: "[cpu] Full-Stack Developer · 5+ years", delay: 180 },
-  { text: "[mem] JavaScript · TypeScript · Go · PHP · C#", delay: 350 },
-  { text: "[net] Connecting services... [OK]", delay: 520 },
-  { text: "[gpu] Rendering interface... [OK]", delay: 680 },
-  { text: "[sys] All systems ready ✓", delay: 850 },
+  { text: "[sys] Initializing arethusa.dev...", delay: 0 },
+  { text: "[cpu] Full-stack systems profile loaded", delay: 160 },
+  { text: "[net] Integration services ready [OK]", delay: 320 },
+  { text: "[db] Data layer connected [OK]", delay: 480 },
+  { text: "[ui] Interface ready [OK]", delay: 640 },
+  { text: "[sys] All systems running [READY]", delay: 800 },
 ];
 
 /* ═══════════════════════════════════════════════════════
@@ -200,27 +193,19 @@ const staggerSlow = {
   },
 };
 
-/* ═══════════════════════════════════════════════════════
-   HOOKS
-   ═══════════════════════════════════════════════════════ */
-
 function useActiveSection() {
   const [activeId, setActiveId] = useState("about");
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setActiveId(entry.target.id);
-          }
-        }
+        const visibleSection = entries.find((entry) => entry.isIntersecting);
+        if (visibleSection) setActiveId(visibleSection.target.id);
       },
-      { rootMargin: "-40% 0px -55% 0px" }
+      { rootMargin: "-40% 0px -50% 0px" },
     );
 
-    const sections = document.querySelectorAll("section[id]");
-    sections.forEach((s) => observer.observe(s));
+    document.querySelectorAll("section[id]").forEach((section) => observer.observe(section));
     return () => observer.disconnect();
   }, []);
 
@@ -230,19 +215,6 @@ function useActiveSection() {
 /* ═══════════════════════════════════════════════════════
    SHARED COMPONENTS
    ═══════════════════════════════════════════════════════ */
-
-function FloatingOrbs() {
-  const reduced = useReducedMotion();
-  if (reduced) return null;
-
-  return (
-    <div className="orbs-container">
-      <div className="orb orb--1" />
-      <div className="orb orb--2" />
-      <div className="orb orb--3" />
-    </div>
-  );
-}
 
 function Section({
   id,
@@ -273,6 +245,7 @@ function SectionHeader({
 
   return (
     <motion.div
+      className="section-header"
       initial={reduced ? false : "hidden"}
       whileInView="visible"
       viewport={{ once: true, amount: 0.3 }}
@@ -290,44 +263,6 @@ function SectionHeader({
         </motion.p>
       )}
     </motion.div>
-  );
-}
-
-function TypewriterText({ items }: { items: string[] }) {
-  const [lineIndex, setLineIndex] = useState(0);
-  const [displayed, setDisplayed] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    const current = items[lineIndex];
-    const step = isDeleting ? 18 : 40;
-
-    const timeout = window.setTimeout(() => {
-      if (!isDeleting && displayed.length < current.length) {
-        setDisplayed(current.slice(0, displayed.length + 1));
-        return;
-      }
-      if (!isDeleting && displayed.length === current.length) {
-        window.setTimeout(() => setIsDeleting(true), 1800);
-        return;
-      }
-      if (isDeleting && displayed.length > 0) {
-        setDisplayed(current.slice(0, displayed.length - 1));
-        return;
-      }
-      setIsDeleting(false);
-      setLineIndex((prev) => (prev + 1) % items.length);
-    }, step);
-
-    return () => window.clearTimeout(timeout);
-  }, [displayed, isDeleting, items, lineIndex]);
-
-  return (
-    <div className="typewriter-line">
-      <span style={{ color: "var(--blue-bright)" }}>{">"}</span>
-      <span>{displayed}</span>
-      <span className="typewriter-cursor" />
-    </div>
   );
 }
 
@@ -365,10 +300,6 @@ function ChevronDown({ size = 20 }: { size?: number }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════
-   BOOT SEQUENCE
-   ═══════════════════════════════════════════════════════ */
-
 function BootSequence({ onComplete }: { onComplete: () => void }) {
   const [visibleLines, setVisibleLines] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -380,51 +311,46 @@ function BootSequence({ onComplete }: { onComplete: () => void }) {
       return;
     }
 
-    const timers: number[] = [];
+    const timers = bootLines.map((line, index) =>
+      window.setTimeout(() => {
+        setVisibleLines(index + 1);
+        setProgress(Math.round(((index + 1) / bootLines.length) * 100));
+      }, line.delay),
+    );
+    timers.push(window.setTimeout(onComplete, 1350));
 
-    bootLines.forEach((line, i) => {
-      timers.push(
-        window.setTimeout(() => {
-          setVisibleLines(i + 1);
-          setProgress(Math.round(((i + 1) / bootLines.length) * 100));
-        }, line.delay)
-      );
-    });
-
-    timers.push(window.setTimeout(onComplete, 1600));
     return () => timers.forEach(clearTimeout);
   }, [onComplete, reduced]);
 
   return (
-    <motion.div className="boot-screen" exit={{ opacity: 0 }} transition={{ duration: 0.5 }}>
+    <motion.div className="boot-screen" exit={{ opacity: 0 }} transition={{ duration: 0.35 }}>
       <div className="boot-content">
-        {bootLines.slice(0, visibleLines).map((line, i) => (
+        <p className="boot-kicker">ARETHUSA ARYANDHANA / SYSTEMS PORTFOLIO</p>
+        {bootLines.slice(0, visibleLines).map((line) => (
           <motion.div
-            key={i}
+            key={line.text}
             className="boot-line"
             initial={{ opacity: 0, x: -6 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.12 }}
+            transition={{ duration: 0.14 }}
           >
-            {line.text.includes("[OK]") ? (
+            {line.text.includes("[READY]") ? (
+              <>
+                {line.text.replace("[READY]", "")}
+                <span className="boot-check">[READY]</span>
+              </>
+            ) : line.text.includes("[OK]") ? (
               <>
                 {line.text.replace("[OK]", "")}
                 <span className="boot-ok">[OK]</span>
               </>
-            ) : line.text.includes("✓") ? (
-              <span className="boot-check">{line.text}</span>
-            ) : (
-              line.text
-            )}
+            ) : line.text}
           </motion.div>
         ))}
-
         <div className="boot-progress">
           <div className="boot-progress-bar" style={{ width: `${progress}%` }} />
         </div>
-        <div className="boot-percent">
-          {progress}% — {progress < 100 ? "Loading..." : "Ready"}
-        </div>
+        <div className="boot-percent">{progress < 100 ? `${progress}% / Loading` : "100% / Ready"}</div>
       </div>
     </motion.div>
   );
@@ -439,28 +365,27 @@ function Navigation({ activeId }: { activeId: string }) {
 
   const scrollTo = (id: string) => {
     setMenuOpen(false);
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: "smooth" });
+    const section = document.getElementById(id);
+    if (section) window.scrollTo({ top: section.offsetTop, behavior: "smooth" });
   };
 
   return (
     <nav className="nav">
       <div className="nav-inner">
-        <a className="nav-logo" onClick={() => scrollTo("about")} role="button" tabIndex={0}>
+        <button className="nav-logo" onClick={() => scrollTo("about")} type="button" aria-label="Go to home">
           A.
-        </a>
+        </button>
 
         <ul className={`nav-links ${menuOpen ? "nav-links--open" : ""}`}>
           {navItems.map((item) => (
             <li key={item.id}>
-              <a
+              <button
                 className={`nav-link ${activeId === item.id ? "nav-link--active" : ""}`}
                 onClick={() => scrollTo(item.id)}
-                role="button"
-                tabIndex={0}
+                type="button"
               >
                 {item.label}
-              </a>
+              </button>
             </li>
           ))}
           <li>
@@ -494,23 +419,18 @@ function HeroSection() {
 
   return (
     <Section id="about" className="section--hero">
-      <FloatingOrbs />
+      <div className="hero-layout">
       <div className="hero-content">
         <motion.div
           initial={reduced ? false : "hidden"}
           animate="visible"
           variants={stagger}
         >
-          {/* Available badge */}
           <motion.div variants={fadeInUp} transition={{ duration: 0.6 }}>
-            <div className="hero-badge">
-              <span className="hero-badge-dot" />
-              Available for new opportunities
-            </div>
+            <p className="label hero-eyebrow">Full-stack developer · Surabaya, Indonesia</p>
           </motion.div>
 
-          {/* Name */}
-          <motion.h1 className="headline-xl hero-name gradient-text" variants={fadeInUp} transition={{ duration: 0.6 }}>
+          <motion.h1 className="headline-xl hero-name" variants={fadeInUp} transition={{ duration: 0.6 }}>
             Arethusa
             <br />
             Aryandhana
@@ -518,93 +438,59 @@ function HeroSection() {
 
           {/* Title */}
           <motion.p className="hero-title" variants={fadeInUp} transition={{ duration: 0.6 }}>
-            Full-Stack Developer
+            Software systems, integrations, and web applications.
           </motion.p>
 
           {/* Description */}
           <motion.p className="hero-desc" variants={fadeInUp} transition={{ duration: 0.6 }}>
-            I build reliable digital systems — from APIs and middleware to polished user interfaces — for businesses that need both speed and clarity.
+            I build dependable products for teams that need clarity across their interfaces, APIs, integrations, and data infrastructure.
           </motion.p>
 
-          {/* Typewriter */}
-          <motion.div variants={fadeIn} transition={{ duration: 0.4, delay: 0.6 }}>
-            <TypewriterText items={typewriterPhrases} />
-          </motion.div>
+          <motion.p className="hero-focus" variants={fadeIn} transition={{ duration: 0.4, delay: 0.6 }}>
+            Focused on practical, maintainable software delivery.
+          </motion.p>
 
           {/* CTA */}
           <motion.div className="hero-cta-row" variants={fadeInUp} transition={{ duration: 0.6 }}>
-            <a href="#projects" className="btn-primary" onClick={(e) => { e.preventDefault(); document.getElementById("projects")?.scrollIntoView({ behavior: "smooth" }); }}>
-              View My Work
+            <a href="#projects" className="btn-primary" onClick={(event) => { event.preventDefault(); const section = document.getElementById("projects"); if (section) window.scrollTo({ top: section.offsetTop, behavior: "smooth" }); }}>
+              View selected work
               <ChevronDown size={16} />
             </a>
             <a href="mailto:ryan.arethusa@gmail.com" className="btn-secondary">
-              Get In Touch
+              Start a conversation
             </a>
           </motion.div>
 
-          {/* Stats */}
-          <motion.div className="stats-row" variants={fadeInUp} transition={{ duration: 0.7, delay: 0.3 }}>
+        </motion.div>
+      </div>
+        <motion.aside
+          className="hero-summary"
+          initial={reduced ? false : { opacity: 0, x: 20 }}
+          animate={reduced ? undefined : { opacity: 1, x: 0 }}
+          transition={{ duration: 0.7, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <div className="stats-row hero-stats">
             {[
               { value: "5+", label: "Years Experience" },
-              { value: "20+", label: "Technologies" },
+              { value: "5", label: "Professional Roles" },
               { value: "5", label: "Certifications" },
-              { value: "5", label: "Roles Held" },
+              { value: "4", label: "Technical Domains" },
             ].map((stat) => (
               <div key={stat.label} className="stat-item">
                 <div className="stat-value">{stat.value}</div>
                 <div className="stat-label">{stat.label}</div>
               </div>
             ))}
-          </motion.div>
-
-          {/* Code Card — subtle developer identity */}
-          <motion.div variants={fadeInUp} transition={{ duration: 0.7, delay: 0.5 }}>
-            <div className="code-card">
-              <div className="code-card-dots">
-                <span /><span /><span />
-              </div>
-              <div>
-                <span className="syn-keyword">const</span>{" "}
-                <span className="syn-variable">arethusa</span>{" "}
-                <span className="syn-operator">=</span>{" "}
-                <span className="syn-punctuation">{"{"}</span>
-              </div>
-              <div style={{ paddingLeft: 20 }}>
-                <span className="syn-property">role</span>
-                <span className="syn-punctuation">:</span>{" "}
-                <span className="syn-string">"Full-Stack Developer"</span>
-                <span className="syn-punctuation">,</span>
-              </div>
-              <div style={{ paddingLeft: 20 }}>
-                <span className="syn-property">experience</span>
-                <span className="syn-punctuation">:</span>{" "}
-                <span className="syn-string">"5+ years"</span>
-                <span className="syn-punctuation">,</span>
-              </div>
-              <div style={{ paddingLeft: 20 }}>
-                <span className="syn-property">focus</span>
-                <span className="syn-punctuation">:</span>{" "}
-                <span className="syn-punctuation">[</span>
-                <span className="syn-string">"APIs"</span>
-                <span className="syn-punctuation">,</span>{" "}
-                <span className="syn-string">"Middleware"</span>
-                <span className="syn-punctuation">,</span>{" "}
-                <span className="syn-string">"Data Systems"</span>
-                <span className="syn-punctuation">]</span>
-                <span className="syn-punctuation">,</span>
-              </div>
-              <div style={{ paddingLeft: 20 }}>
-                <span className="syn-property">location</span>
-                <span className="syn-punctuation">:</span>{" "}
-                <span className="syn-string">"Indonesia 🇮🇩"</span>
-              </div>
-              <div>
-                <span className="syn-punctuation">{"}"}</span>
-                <span className="syn-punctuation">;</span>
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
+          </div>
+          <p className="label">Core capabilities</p>
+          <ul>
+            <li><span>01</span> Product-oriented web applications</li>
+            <li><span>02</span> APIs, middleware, and integrations</li>
+            <li><span>03</span> Database and data-flow design</li>
+            <li><span>04</span> Containerised platform delivery</li>
+          </ul>
+          <p className="hero-summary-note">Turning complex operational needs into reliable software.</p>
+        </motion.aside>
       </div>
     </Section>
   );
@@ -620,9 +506,9 @@ function ProjectsSection() {
   return (
     <Section id="projects" className="section--gradient">
       <SectionHeader
-        label="Portfolio"
-        title="What I've Built"
-        subtitle="A selection of projects where I've designed, developed, and delivered end-to-end solutions."
+        label="Selected work"
+        title="Systems built for real operations"
+        subtitle="A selection of product and platform work across the modern web stack."
       />
 
       <motion.div
@@ -669,9 +555,9 @@ function ExperienceSection() {
   return (
     <Section id="experience" className="section--dark">
       <SectionHeader
-        label="Career"
-        title="Where I've Worked"
-        subtitle="Over 5 years of professional experience building software across multiple industries."
+        label="Experience"
+        title="Professional track record"
+        subtitle="Over five years building software and business solutions across multiple industries."
       />
 
       <motion.div
@@ -711,9 +597,9 @@ function SkillsSection() {
   return (
     <Section id="skills" className="section--glow">
       <SectionHeader
-        label="Expertise"
-        title="Technologies I Work With"
-        subtitle="A comprehensive toolkit spanning frontend, backend, databases, and cloud infrastructure."
+        label="Technical expertise"
+        title="Tools chosen for the job"
+        subtitle="A practical toolkit across frontend, backend, data, and platform delivery."
       />
 
       <motion.div
@@ -766,8 +652,8 @@ function CredentialsSection() {
     <Section id="credentials" className="section--gradient">
       <SectionHeader
         label="Credentials"
-        title="Certifications & Education"
-        subtitle="Verified credentials and academic background that support my professional expertise."
+        title="Credentials and education"
+        subtitle="Professional certifications and academic background."
       />
 
       {/* Certificates */}
@@ -865,11 +751,10 @@ function ContactSection() {
           Contact
         </motion.p>
         <motion.h2 className="headline-lg section-title gradient-text-subtle" variants={fadeInUp} transition={{ duration: 0.5 }}>
-          Let's Work Together
+          Let’s discuss your next project
         </motion.h2>
         <motion.p className="body-md" style={{ maxWidth: 560, marginBottom: 48 }} variants={fadeInUp} transition={{ duration: 0.5 }}>
-          I'm always open to discussing new projects, collaborations, or opportunities.
-          Whether you need a full-stack developer or just want to chat about tech — reach out!
+          I’m available to discuss software development, systems integration, and technical discovery for your next initiative.
         </motion.p>
 
         <motion.div className="contact-grid" variants={fadeInUp} transition={{ duration: 0.5 }}>
@@ -914,42 +799,11 @@ function ContactSection() {
             </div>
           </div>
 
-          {/* Code card as contact identity */}
-          <div className="code-card" style={{ maxWidth: "100%" }}>
-            <div className="code-card-dots">
-              <span /><span /><span />
-            </div>
-            <div style={{ marginBottom: 4 }}>
-              <span className="syn-comment">{"// Let's connect"}</span>
-            </div>
-            <div>
-              <span className="syn-keyword">const</span>{" "}
-              <span className="syn-variable">contact</span>{" "}
-              <span className="syn-operator">=</span>{" "}
-              <span className="syn-punctuation">{"{"}</span>
-            </div>
-            <div style={{ paddingLeft: 20 }}>
-              <span className="syn-property">email</span>
-              <span className="syn-punctuation">:</span>{" "}
-              <span className="syn-string">"ryan.arethusa@gmail.com"</span>
-              <span className="syn-punctuation">,</span>
-            </div>
-            <div style={{ paddingLeft: 20 }}>
-              <span className="syn-property">github</span>
-              <span className="syn-punctuation">:</span>{" "}
-              <span className="syn-string">"arethusaryandhana"</span>
-              <span className="syn-punctuation">,</span>
-            </div>
-            <div style={{ paddingLeft: 20 }}>
-              <span className="syn-property">status</span>
-              <span className="syn-punctuation">:</span>{" "}
-              <span className="syn-string">"open to work"</span>
-            </div>
-            <div>
-              <span className="syn-punctuation">{"}"}</span>
-              <span className="syn-punctuation">;</span>
-            </div>
-          </div>
+          <aside className="contact-panel">
+            <p className="label">A practical partnership</p>
+            <p>I work comfortably across product, platform, and integration concerns—especially where reliability and maintainability matter.</p>
+            <div className="contact-panel-detail">Typically available for full-stack development, integration work, and technical discovery.</div>
+          </aside>
         </motion.div>
       </motion.div>
     </Section>
@@ -1001,20 +855,15 @@ function HomePage() {
   const activeId = useActiveSection();
 
   return (
-    <div style={{ minHeight: "100dvh" }}>
+    <div className="app-shell">
       <Navigation activeId={activeId} />
 
       <main>
         <HeroSection />
-        <div className="section-divider" />
         <ProjectsSection />
-        <div className="section-divider" />
         <ExperienceSection />
-        <div className="section-divider" />
         <SkillsSection />
-        <div className="section-divider" />
         <CredentialsSection />
-        <div className="section-divider" />
         <ContactSection />
       </main>
 
@@ -1029,11 +878,7 @@ function HomePage() {
 
 export default function App() {
   const reduced = useReducedMotion();
-
-  const [booted, setBooted] = useState(() => {
-    return sessionStorage.getItem("aa-booted") === "true";
-  });
-
+  const [booted, setBooted] = useState(() => sessionStorage.getItem("aa-booted") === "true");
   const handleBootComplete = useCallback(() => {
     sessionStorage.setItem("aa-booted", "true");
     setBooted(true);
