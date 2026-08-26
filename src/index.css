@@ -76,7 +76,6 @@
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 0;
-  scroll-snap-type: y mandatory;
 }
 
 body {
@@ -366,8 +365,6 @@ h1, h2, h3, h4, h5, h6 {
   padding: var(--section-padding) 24px;
   overflow: hidden;
   scroll-margin-top: 0;
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
 }
 
 .section-inner {

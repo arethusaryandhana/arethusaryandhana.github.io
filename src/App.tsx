@@ -325,7 +325,7 @@ function BootSequence({ onComplete }: { onComplete: () => void }) {
   return (
     <motion.div className="boot-screen" exit={{ opacity: 0 }} transition={{ duration: 0.35 }}>
       <div className="boot-content">
-        <p className="boot-kicker">ARETHUSA ARYANDHANA / SYSTEMS PORTFOLIO</p>
+        <p className="boot-kicker">ARETHUSA ARYANDHANA / FULL-STACK DEVELOPER</p>
         {bootLines.slice(0, visibleLines).map((line) => (
           <motion.div
             key={line.text}
