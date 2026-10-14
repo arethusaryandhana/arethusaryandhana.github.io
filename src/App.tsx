@@ -13,70 +13,46 @@ import {
   GraduationIcon,
   ExternalLinkIcon,
 } from "./icons";
+import { LanguageProvider } from "./components/LanguageProvider";
+import { useLanguage } from "./i18n";
 
 /* ═══════════════════════════════════════════════════════
    DATA
    ═══════════════════════════════════════════════════════ */
 
 const navItems = [
-  { id: "about", label: "About" },
-  { id: "projects", label: "Projects" },
-  { id: "experience", label: "Experience" },
-  { id: "skills", label: "Skills" },
-  { id: "credentials", label: "Credentials" },
-  { id: "contact", label: "Contact" },
-];
+  { id: "about" },
+  { id: "projects" },
+  { id: "experience" },
+  { id: "skills" },
+  { id: "credentials" },
+  { id: "contact" },
+] as const;
 
 const projects = [
   {
     name: "StackForge",
-    desc: "A project scaffolder with templates teams can customize for their own app structure.",
     tech: ["React", "Node.js", "TypeScript"],
     repo: "https://github.com/arethusaryandhana/stackforge",
-    live: "https://stackforge.example.com",
   },
   {
     name: "Orderly POS",
-    desc: "A point-of-sale app with live inventory updates for retail teams.",
     tech: ["React", "Redis", "WebSocket"],
     repo: "https://github.com/arethusaryandhana/orderly-pos",
-    live: "https://orderly.example.com",
   },
   {
     name: "API Sentinel",
-    desc: "Tracks API uptime and response times, and alerts you when an endpoint needs attention.",
     tech: ["Node.js", "PostgreSQL", "Docker"],
     repo: "https://github.com/arethusaryandhana/api-sentinel",
-    live: "https://sentinel.example.com",
   },
 ];
 
 const experience = [
-  {
-    role: "Middleware, Database & API Tech",
-    company: "PT. Meratus Line",
-    period: "Jun 2024 — Present",
-  },
-  {
-    role: "Business Solution Software Developer",
-    company: "PT. Meratus Line",
-    period: "Jul 2023 — May 2024",
-  },
-  {
-    role: "IT Developer Supervisor",
-    company: "PT. Graha Multi Bintang",
-    period: "Jan 2023 — Jun 2023",
-  },
-  {
-    role: "Senior Full Stack Programmer",
-    company: "PT. Graha Multi Bintang",
-    period: "Oct 2021 — Jan 2023",
-  },
-  {
-    role: "Backend Software Developer",
-    company: "PT. SMART IT",
-    period: "Dec 2019 — Mar 2021",
-  },
+  { company: "PT. Meratus Line" },
+  { company: "PT. Meratus Line" },
+  { company: "PT. Graha Multi Bintang" },
+  { company: "PT. Graha Multi Bintang" },
+  { company: "PT. SMART IT" },
 ];
 
 const certificates = [
@@ -158,14 +134,7 @@ const skillGroups = [
   },
 ];
 
-const bootLines = [
-  { text: "[sys] Initializing arethusa.dev...", delay: 0 },
-  { text: "[cpu] Full-stack developer profile loaded", delay: 160 },
-  { text: "[net] APIs and integrations ready [OK]", delay: 320 },
-  { text: "[db] Database connected [OK]", delay: 480 },
-  { text: "[ui] Portfolio ready [OK]", delay: 640 },
-  { text: "[sys] Ready [READY]", delay: 800 },
-];
+const bootLineDelays = [0, 160, 320, 480, 640, 800];
 
 /* ═══════════════════════════════════════════════════════
    ANIMATION VARIANTS
@@ -304,6 +273,8 @@ function BootSequence({ onComplete }: { onComplete: () => void }) {
   const [visibleLines, setVisibleLines] = useState(0);
   const [progress, setProgress] = useState(0);
   const reduced = useReducedMotion();
+  const { t } = useLanguage();
+  const lines = t.boot.lines;
 
   useEffect(() => {
     if (reduced) {
@@ -311,46 +282,50 @@ function BootSequence({ onComplete }: { onComplete: () => void }) {
       return;
     }
 
-    const timers = bootLines.map((line, index) =>
+    const timers = lines.map((_, index) =>
       window.setTimeout(() => {
         setVisibleLines(index + 1);
-        setProgress(Math.round(((index + 1) / bootLines.length) * 100));
-      }, line.delay),
+        setProgress(Math.round(((index + 1) / lines.length) * 100));
+      }, bootLineDelays[index]),
     );
-    timers.push(window.setTimeout(onComplete, 1350));
+    timers.push(window.setTimeout(onComplete, (bootLineDelays.at(-1) ?? 800) + 550));
 
     return () => timers.forEach(clearTimeout);
-  }, [onComplete, reduced]);
+  }, [onComplete, reduced, lines]);
 
   return (
     <motion.div className="boot-screen" exit={{ opacity: 0 }} transition={{ duration: 0.35 }}>
       <div className="boot-content">
-        <p className="boot-kicker">ARETHUSA ARYANDHANA / FULL-STACK DEVELOPER</p>
-        {bootLines.slice(0, visibleLines).map((line) => (
+        <p className="boot-kicker">{t.boot.kicker}</p>
+        {lines.slice(0, visibleLines).map((line) => (
           <motion.div
-            key={line.text}
+            key={line}
             className="boot-line"
             initial={{ opacity: 0, x: -6 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.14 }}
           >
-            {line.text.includes("[READY]") ? (
+            {line.includes("[READY]") ? (
               <>
-                {line.text.replace("[READY]", "")}
+                {line.replace("[READY]", "")}
                 <span className="boot-check">[READY]</span>
               </>
-            ) : line.text.includes("[OK]") ? (
+            ) : line.includes("[OK]") ? (
               <>
-                {line.text.replace("[OK]", "")}
+                {line.replace("[OK]", "")}
                 <span className="boot-ok">[OK]</span>
               </>
-            ) : line.text}
+            ) : line}
           </motion.div>
         ))}
         <div className="boot-progress">
           <div className="boot-progress-bar" style={{ width: `${progress}%` }} />
         </div>
-        <div className="boot-percent">{progress < 100 ? `${progress}% / Loading` : "100% / Ready"}</div>
+        <div className="boot-percent">
+          {progress < 100
+            ? `${progress}% / ${t.boot.loading}`
+            : `100% / ${t.boot.ready}`}
+        </div>
       </div>
     </motion.div>
   );
@@ -362,6 +337,7 @@ function BootSequence({ onComplete }: { onComplete: () => void }) {
 
 function Navigation({ activeId }: { activeId: string }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { language, setLanguage, t } = useLanguage();
 
   const scrollTo = (id: string) => {
     setMenuOpen(false);
@@ -372,28 +348,48 @@ function Navigation({ activeId }: { activeId: string }) {
   return (
     <nav className="nav">
       <div className="nav-inner">
-        <button className="nav-logo" onClick={() => scrollTo("about")} type="button" aria-label="Go to home">
+        <button className="nav-logo" onClick={() => scrollTo("about")} type="button" aria-label={t.navigation.homeLabel}>
           A.
         </button>
 
         <ul className={`nav-links ${menuOpen ? "nav-links--open" : ""}`}>
-          {navItems.map((item) => (
+          {navItems.map((item, index) => (
             <li key={item.id}>
               <button
                 className={`nav-link ${activeId === item.id ? "nav-link--active" : ""}`}
                 onClick={() => scrollTo(item.id)}
                 type="button"
               >
-                {item.label}
+                {t.navigation.items[index]}
               </button>
             </li>
           ))}
+          <li>
+            <div className="language-switch" role="group" aria-label={t.navigation.languageLabel}>
+              {(["en", "id"] as const).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className={`language-option ${language === option ? "language-option--active" : ""}`}
+                  aria-label={t.navigation.languageNames[option]}
+                  aria-pressed={language === option}
+                  title={t.navigation.languageNames[option]}
+                  onClick={() => {
+                    setLanguage(option);
+                    setMenuOpen(false);
+                  }}
+                >
+                  {option.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </li>
           <li>
             <a
               className="nav-cta"
               href="mailto:ryan.arethusa@gmail.com"
             >
-              Contact me
+              {t.navigation.contact}
             </a>
           </li>
         </ul>
@@ -401,7 +397,7 @@ function Navigation({ activeId }: { activeId: string }) {
         <button
           className="nav-toggle"
           onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Toggle menu"
+          aria-label={t.navigation.menuLabel}
         >
           <MenuIcon open={menuOpen} />
         </button>
@@ -416,6 +412,7 @@ function Navigation({ activeId }: { activeId: string }) {
 
 function HeroSection() {
   const reduced = useReducedMotion();
+  const { t } = useLanguage();
 
   return (
     <Section id="about" className="section--hero">
@@ -427,7 +424,7 @@ function HeroSection() {
           variants={stagger}
         >
           <motion.div variants={fadeInUp} transition={{ duration: 0.6 }}>
-            <p className="label hero-eyebrow">Full-stack developer · Surabaya, Indonesia</p>
+            <p className="label hero-eyebrow">{t.hero.eyebrow}</p>
           </motion.div>
 
           <motion.h1 className="headline-xl hero-name" variants={fadeInUp} transition={{ duration: 0.6 }}>
@@ -438,26 +435,26 @@ function HeroSection() {
 
           {/* Title */}
           <motion.p className="hero-title" variants={fadeInUp} transition={{ duration: 0.6 }}>
-            Web applications, APIs, and integrations.
+            {t.hero.title}
           </motion.p>
 
           {/* Description */}
           <motion.p className="hero-desc" variants={fadeInUp} transition={{ duration: 0.6 }}>
-            I build web applications and connect the APIs, services, and data behind them.
+            {t.hero.description}
           </motion.p>
 
           <motion.p className="hero-focus" variants={fadeIn} transition={{ duration: 0.4, delay: 0.6 }}>
-            I work across frontend, backend, and data systems.
+            {t.hero.focus}
           </motion.p>
 
           {/* CTA */}
           <motion.div className="hero-cta-row" variants={fadeInUp} transition={{ duration: 0.6 }}>
             <a href="#projects" className="btn-primary" onClick={(event) => { event.preventDefault(); const section = document.getElementById("projects"); if (section) window.scrollTo({ top: section.offsetTop, behavior: "smooth" }); }}>
-              View selected work
+              {t.hero.viewWork}
               <ChevronDown size={16} />
             </a>
             <a href="mailto:ryan.arethusa@gmail.com" className="btn-secondary">
-              Email me
+              {t.hero.email}
             </a>
           </motion.div>
 
@@ -471,10 +468,10 @@ function HeroSection() {
         >
           <div className="stats-row hero-stats">
             {[
-              { value: "6+", label: "Years of experience" },
-              { value: "5", label: "Roles" },
-              { value: "5", label: "Certifications" },
-              { value: "4", label: "Areas of work" },
+              { value: "6+", label: t.hero.stats[0] },
+              { value: "5", label: t.hero.stats[1] },
+              { value: "5", label: t.hero.stats[2] },
+              { value: "4", label: t.hero.stats[3] },
             ].map((stat) => (
               <div key={stat.label} className="stat-item">
                 <div className="stat-value">{stat.value}</div>
@@ -482,12 +479,11 @@ function HeroSection() {
               </div>
             ))}
           </div>
-          <p className="label">What I work on</p>
+          <p className="label">{t.hero.workLabel}</p>
           <ul>
-            <li><span>01</span> Web applications</li>
-            <li><span>02</span> APIs, middleware, and integrations</li>
-            <li><span>03</span> Database and data-flow design</li>
-            <li><span>04</span> Containers and deployment</li>
+            {t.hero.workItems.map((item, index) => (
+              <li key={item}><span>0{index + 1}</span> {item}</li>
+            ))}
           </ul>
         </motion.aside>
       </div>
@@ -501,13 +497,14 @@ function HeroSection() {
 
 function ProjectsSection() {
   const reduced = useReducedMotion();
+  const { t } = useLanguage();
 
   return (
     <Section id="projects" className="section--gradient">
       <SectionHeader
-        label="Selected work"
-        title="A few projects"
-        subtitle="Tools for project setup, retail inventory, and API monitoring."
+        label={t.projects.label}
+        title={t.projects.title}
+        subtitle={t.projects.subtitle}
       />
 
       <motion.div
@@ -517,19 +514,19 @@ function ProjectsSection() {
         viewport={{ once: true, amount: 0.1 }}
         variants={stagger}
       >
-        {projects.map((p) => (
+        {projects.map((p, index) => (
           <motion.div key={p.name} variants={fadeInUp} transition={{ duration: 0.5 }}>
             <div className="card" style={{ height: "100%", display: "flex", flexDirection: "column" }}>
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                   <h3 className="card-title">{p.name}</h3>
                   <div style={{ display: "flex", gap: 8 }}>
-                    <a href={p.repo} target="_blank" rel="noreferrer" className="btn-icon" style={{ width: 32, height: 32 }} aria-label={`${p.name} repo`}>
+                    <a href={p.repo} target="_blank" rel="noreferrer" className="btn-icon" style={{ width: 32, height: 32 }} aria-label={t.projects.repositoryLabel.replace("{name}", p.name)}>
                       <ExternalLinkIcon size={14} />
                     </a>
                   </div>
                 </div>
-                <p className="card-desc">{p.desc}</p>
+                <p className="card-desc">{t.projects.descriptions[index]}</p>
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {p.tech.map((t) => (
@@ -550,13 +547,14 @@ function ProjectsSection() {
 
 function ExperienceSection() {
   const reduced = useReducedMotion();
+  const { t } = useLanguage();
 
   return (
     <Section id="experience" className="section--dark">
       <SectionHeader
-        label="Experience"
-        title="Work history"
-        subtitle="Since 2019, I've worked in software roles at Meratus Line, Graha Multi Bintang, and SMART IT."
+        label={t.experience.label}
+        title={t.experience.title}
+        subtitle={t.experience.subtitle}
       />
 
       <motion.div
@@ -566,18 +564,18 @@ function ExperienceSection() {
         viewport={{ once: true, amount: 0.1 }}
         variants={staggerSlow}
       >
-        {experience.map((exp) => (
+        {experience.map((exp, index) => (
           <motion.div
-            key={`${exp.role}-${exp.company}`}
+            key={`${exp.company}-${index}`}
             className="timeline-item"
             variants={fadeInUp}
             transition={{ duration: 0.5 }}
           >
             <div className="timeline-dot" />
             <div className="timeline-card">
-              <div className="timeline-role">{exp.role}</div>
+              <div className="timeline-role">{t.experience.roles[index]}</div>
               <div className="timeline-company">{exp.company}</div>
-              <div className="timeline-period">{exp.period}</div>
+              <div className="timeline-period">{t.experience.periods[index]}</div>
             </div>
           </motion.div>
         ))}
@@ -592,12 +590,13 @@ function ExperienceSection() {
 
 function SkillsSection() {
   const reduced = useReducedMotion();
+  const { t } = useLanguage();
 
   return (
     <Section id="skills" className="section--glow">
       <SectionHeader
-        label="Skills"
-        title="Tools I use"
+        label={t.skills.label}
+        title={t.skills.title}
       />
 
       <motion.div
@@ -607,10 +606,10 @@ function SkillsSection() {
         viewport={{ once: true, amount: 0.1 }}
         variants={stagger}
       >
-        {skillGroups.map((group) => (
+        {skillGroups.map((group, index) => (
           <motion.div key={group.label} variants={fadeInUp} transition={{ duration: 0.5 }}>
             <div className="card">
-              <div className="skills-group-title">{group.label}</div>
+              <div className="skills-group-title">{t.skills.groups[index]}</div>
               {group.items.map((item) => {
                 const Icon = techIcons[item.name];
                 return (
@@ -645,12 +644,13 @@ function SkillsSection() {
 
 function CredentialsSection() {
   const reduced = useReducedMotion();
+  const { t } = useLanguage();
 
   return (
     <Section id="credentials" className="section--gradient">
       <SectionHeader
-        label="Credentials"
-        title="Education and certifications"
+        label={t.credentials.label}
+        title={t.credentials.title}
       />
 
       {/* Certificates */}
@@ -680,7 +680,7 @@ function CredentialsSection() {
                 {cert.issuer} · {cert.year}
               </div>
               <div className="cert-verify">
-                ✓ Verified
+                ✓ {t.credentials.verified}
               </div>
             </div>
           </motion.a>
@@ -695,7 +695,7 @@ function CredentialsSection() {
         variants={stagger}
       >
         <motion.p className="label" style={{ marginBottom: 16 }} variants={fadeInUp} transition={{ duration: 0.5 }}>
-          Education
+          {t.credentials.education}
         </motion.p>
         <motion.div variants={fadeInUp} transition={{ duration: 0.5 }}>
           <div className="edu-card">
@@ -703,13 +703,13 @@ function CredentialsSection() {
               <div className="cert-icon">
                 <GraduationIcon size={20} />
               </div>
-              <span style={{ fontSize: 13, color: "var(--text-tertiary)" }}>Academic Background</span>
+              <span style={{ fontSize: 13, color: "var(--text-tertiary)" }}>{t.credentials.educationBadge}</span>
             </div>
-            <div className="edu-degree">B.Sc. Computer Science</div>
-            <div className="edu-university">Surabaya University</div>
+            <div className="edu-degree">{t.credentials.degree}</div>
+            <div className="edu-university">{t.credentials.university}</div>
             <div className="edu-period">2015 — 2019</div>
             <div className="edu-status">
-              <span>🎓</span> Graduated
+              <span>🎓</span> {t.credentials.graduated}
             </div>
           </div>
         </motion.div>
@@ -725,6 +725,7 @@ function CredentialsSection() {
 function ContactSection() {
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
   const reduced = useReducedMotion();
+  const { t } = useLanguage();
 
   const copyEmail = useCallback(async () => {
     try {
@@ -745,19 +746,19 @@ function ContactSection() {
         variants={stagger}
       >
         <motion.p className="label section-label" variants={fadeInUp} transition={{ duration: 0.5 }}>
-          Contact
+          {t.contact.label}
         </motion.p>
         <motion.h2 className="headline-lg section-title gradient-text-subtle" variants={fadeInUp} transition={{ duration: 0.5 }}>
-          Get in touch
+          {t.contact.title}
         </motion.h2>
         <motion.p className="body-md" style={{ maxWidth: 560, marginBottom: 48 }} variants={fadeInUp} transition={{ duration: 0.5 }}>
-          I'm open to full-stack development and systems integration projects. Email me if you have something in mind.
+          {t.contact.description}
         </motion.p>
 
         <motion.div className="contact-grid" variants={fadeInUp} transition={{ duration: 0.5 }}>
           <div className="contact-info">
             <div>
-              <div style={{ fontSize: 13, color: "var(--text-tertiary)", marginBottom: 8 }}>Email</div>
+              <div style={{ fontSize: 13, color: "var(--text-tertiary)", marginBottom: 8 }}>{t.contact.email}</div>
               <a href="mailto:ryan.arethusa@gmail.com" className="contact-email">
                 ryan.arethusa@gmail.com
               </a>
@@ -765,16 +766,16 @@ function ContactSection() {
 
             <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
               <a href="mailto:ryan.arethusa@gmail.com" className="btn-primary">
-                Send Email
+                {t.contact.sendEmail}
                 <ArrowIcon />
               </a>
               <button onClick={copyEmail} className="btn-secondary" type="button">
-                {copyState === "copied" ? "✓ Copied!" : "Copy Email"}
+                {copyState === "copied" ? t.contact.copiedEmail : t.contact.copyEmail}
               </button>
             </div>
 
             <div>
-              <div style={{ fontSize: 13, color: "var(--text-tertiary)", marginBottom: 12 }}>Find me on</div>
+              <div style={{ fontSize: 13, color: "var(--text-tertiary)", marginBottom: 12 }}>{t.contact.findMe}</div>
               <div className="social-links">
                 {socials.map((s) => {
                   const Icon = socialIcons[s.label];
@@ -797,9 +798,9 @@ function ContactSection() {
           </div>
 
           <aside className="contact-panel">
-            <p className="label">What I can help with</p>
-            <p>Web applications, APIs, middleware, and database work.</p>
-            <div className="contact-panel-detail">I can also help with technical discovery.</div>
+            <p className="label">{t.contact.panelTitle}</p>
+            <p>{t.contact.panelDescription}</p>
+            <div className="contact-panel-detail">{t.contact.panelDetail}</div>
           </aside>
         </motion.div>
       </motion.div>
@@ -812,6 +813,8 @@ function ContactSection() {
    ═══════════════════════════════════════════════════════ */
 
 function Footer() {
+  const { t } = useLanguage();
+
   return (
     <footer className="footer">
       <div className="footer-inner">
@@ -819,7 +822,7 @@ function Footer() {
           © {new Date().getFullYear()} Arethusa Aryandhana
         </p>
         <p className="footer-text" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>
-          Built with React + TypeScript
+          {t.footer}
         </p>
         <div className="footer-links">
           {socials.map((s) => {
@@ -873,7 +876,7 @@ function HomePage() {
    APP ROOT
    ═══════════════════════════════════════════════════════ */
 
-export default function App() {
+function AppContent() {
   const reduced = useReducedMotion();
   const [booted, setBooted] = useState(() => sessionStorage.getItem("aa-booted") === "true");
   const handleBootComplete = useCallback(() => {
@@ -896,5 +899,13 @@ export default function App() {
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+export default function App() {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
   );
 }
