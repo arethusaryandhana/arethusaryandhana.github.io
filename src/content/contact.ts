@@ -1,8 +1,8 @@
 export const contactSectionContent = {
   label: "Contact",
-  title: "Let's Work Together",
+  title: "Get in touch",
   description:
-    "I'm always open to discussing new projects, collaborations, or opportunities. Whether you need a full-stack developer or just want to chat about tech — reach out!",
+    "I'm open to full-stack development and systems integration projects. Email me if you have something in mind.",
   emailLabel: "Email",
   socialsLabel: "Find me on",
   sendEmailLabel: "Send Email",

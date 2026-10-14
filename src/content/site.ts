@@ -8,8 +8,8 @@ export const profile = {
   githubUrl: "https://github.com/arethusaryandhana",
   linkedInUrl: "https://www.linkedin.com/in/arethusa-aryandhana/",
   locationDisplay: "Indonesia 🇮🇩",
-  availability: "Available for new opportunities",
-  yearsExperience: "5+ years",
+  availability: "Open to new opportunities",
+  yearsExperience: "6+ years",
   status: "open to work",
 };
 

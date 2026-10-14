@@ -1,8 +1,8 @@
 export const experienceSectionContent = {
-  label: "Career",
-  title: "Where I've Worked",
+  label: "Experience",
+  title: "Work history",
   subtitle:
-    "Over 5 years of professional experience building software across multiple industries.",
+    "Since 2019, I've worked in software roles at Meratus Line, Graha Multi Bintang, and SMART IT.",
 };
 
 export const experience = [

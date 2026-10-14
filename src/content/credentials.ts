@@ -1,8 +1,6 @@
 export const credentialsSectionContent = {
   label: "Credentials",
-  title: "Certifications & Education",
-  subtitle:
-    "Verified credentials and academic background that support my professional expertise.",
+  title: "Education and certifications",
   educationLabel: "Education",
   educationBadge: "Academic Background",
 };

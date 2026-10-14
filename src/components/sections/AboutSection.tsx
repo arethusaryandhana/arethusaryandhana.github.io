@@ -66,11 +66,11 @@ export function AboutSection() {
                 document.getElementById("projects")?.scrollIntoView({ behavior: "smooth" });
               }}
             >
-              View My Work
+              View projects
               <ChevronDown size={16} />
             </a>
             <a href={`mailto:${profile.email}`} className="btn-secondary">
-              Get In Touch
+              Email me
             </a>
           </motion.div>
 

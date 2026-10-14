@@ -1,8 +1,6 @@
 export const skillsSectionContent = {
-  label: "Expertise",
-  title: "Technologies I Work With",
-  subtitle:
-    "A comprehensive toolkit spanning frontend, backend, databases, and cloud infrastructure.",
+  label: "Skills",
+  title: "Tools I use",
 };
 
 export const skillGroups = [

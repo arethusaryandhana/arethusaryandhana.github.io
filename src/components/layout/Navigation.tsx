@@ -57,7 +57,7 @@ export function Navigation({ activeId }: NavigationProps) {
           ))}
           <li>
             <a className="nav-cta" href={`mailto:${profile.email}`}>
-              Hire Me
+              Contact me
             </a>
           </li>
         </ul>

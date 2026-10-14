@@ -1,15 +1,15 @@
 export const aboutContent = {
   description:
-    "I build reliable digital systems — from APIs and middleware to polished user interfaces — for businesses that need both speed and clarity.",
+    "I build web applications and connect the APIs, services, and data behind them.",
   typewriterPhrases: [
-    "Building reliable digital systems",
-    "Crafting seamless user experiences",
-    "Engineering APIs that just work",
-    "Designing data flows with clarity",
+    "Building web applications",
+    "Connecting APIs and services",
+    "Working across frontend and backend",
+    "Designing data flows",
   ],
   focusAreas: ["APIs", "Middleware", "Data Systems"],
   coreStats: [
-    { value: "5+", label: "Years Experience" },
-    { value: "20+", label: "Technologies" },
+    { value: "6+", label: "Years of experience" },
+    { value: "17+", label: "Technologies" },
   ],
 };

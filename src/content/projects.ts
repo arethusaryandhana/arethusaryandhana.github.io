@@ -1,26 +1,26 @@
 export const projectsSectionContent = {
   label: "Portfolio",
-  title: "What I've Built",
+  title: "A few projects",
   subtitle:
-    "A selection of projects where I've designed, developed, and delivered end-to-end solutions.",
+    "Tools for project setup, retail inventory, and API monitoring.",
 };
 
 export const projects = [
   {
     name: "StackForge",
-    desc: "A full-stack project scaffolding tool that helps teams spin up production-ready apps in minutes with customizable templates.",
+    desc: "A project scaffolder with templates teams can customize for their own app structure.",
     tech: ["React", "Node.js", "TypeScript"],
     repo: "https://github.com/arethusaryandhana/stackforge",
   },
   {
     name: "Orderly POS",
-    desc: "Point-of-sale system with real-time inventory tracking, built for retail businesses that need speed and reliability.",
+    desc: "A point-of-sale app with live inventory updates for retail teams.",
     tech: ["React", "Redis", "WebSocket"],
     repo: "https://github.com/arethusaryandhana/orderly-pos",
   },
   {
     name: "API Sentinel",
-    desc: "API monitoring dashboard that watches your endpoints 24/7, with smart alerts and performance analytics.",
+    desc: "Tracks API uptime and response times, and alerts you when an endpoint needs attention.",
     tech: ["Node.js", "PostgreSQL", "Docker"],
     repo: "https://github.com/arethusaryandhana/api-sentinel",
   },

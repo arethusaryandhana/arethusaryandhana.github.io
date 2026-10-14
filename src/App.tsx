@@ -30,21 +30,21 @@ const navItems = [
 const projects = [
   {
     name: "StackForge",
-    desc: "A full-stack project scaffolding tool that helps teams spin up production-ready apps in minutes with customizable templates.",
+    desc: "A project scaffolder with templates teams can customize for their own app structure.",
     tech: ["React", "Node.js", "TypeScript"],
     repo: "https://github.com/arethusaryandhana/stackforge",
     live: "https://stackforge.example.com",
   },
   {
     name: "Orderly POS",
-    desc: "Point-of-sale system with real-time inventory tracking, built for retail businesses that need speed and reliability.",
+    desc: "A point-of-sale app with live inventory updates for retail teams.",
     tech: ["React", "Redis", "WebSocket"],
     repo: "https://github.com/arethusaryandhana/orderly-pos",
     live: "https://orderly.example.com",
   },
   {
     name: "API Sentinel",
-    desc: "API monitoring dashboard that watches your endpoints 24/7, with smart alerts and performance analytics.",
+    desc: "Tracks API uptime and response times, and alerts you when an endpoint needs attention.",
     tech: ["Node.js", "PostgreSQL", "Docker"],
     repo: "https://github.com/arethusaryandhana/api-sentinel",
     live: "https://sentinel.example.com",
@@ -160,11 +160,11 @@ const skillGroups = [
 
 const bootLines = [
   { text: "[sys] Initializing arethusa.dev...", delay: 0 },
-  { text: "[cpu] Full-stack systems profile loaded", delay: 160 },
-  { text: "[net] Integration services ready [OK]", delay: 320 },
-  { text: "[db] Data layer connected [OK]", delay: 480 },
-  { text: "[ui] Interface ready [OK]", delay: 640 },
-  { text: "[sys] All systems running [READY]", delay: 800 },
+  { text: "[cpu] Full-stack developer profile loaded", delay: 160 },
+  { text: "[net] APIs and integrations ready [OK]", delay: 320 },
+  { text: "[db] Database connected [OK]", delay: 480 },
+  { text: "[ui] Portfolio ready [OK]", delay: 640 },
+  { text: "[sys] Ready [READY]", delay: 800 },
 ];
 
 /* ═══════════════════════════════════════════════════════
@@ -393,7 +393,7 @@ function Navigation({ activeId }: { activeId: string }) {
               className="nav-cta"
               href="mailto:ryan.arethusa@gmail.com"
             >
-              Hire Me
+              Contact me
             </a>
           </li>
         </ul>
@@ -438,16 +438,16 @@ function HeroSection() {
 
           {/* Title */}
           <motion.p className="hero-title" variants={fadeInUp} transition={{ duration: 0.6 }}>
-            Software systems, integrations, and web applications.
+            Web applications, APIs, and integrations.
           </motion.p>
 
           {/* Description */}
           <motion.p className="hero-desc" variants={fadeInUp} transition={{ duration: 0.6 }}>
-            I build dependable products for teams that need clarity across their interfaces, APIs, integrations, and data infrastructure.
+            I build web applications and connect the APIs, services, and data behind them.
           </motion.p>
 
           <motion.p className="hero-focus" variants={fadeIn} transition={{ duration: 0.4, delay: 0.6 }}>
-            Focused on practical, maintainable software delivery.
+            I work across frontend, backend, and data systems.
           </motion.p>
 
           {/* CTA */}
@@ -457,7 +457,7 @@ function HeroSection() {
               <ChevronDown size={16} />
             </a>
             <a href="mailto:ryan.arethusa@gmail.com" className="btn-secondary">
-              Start a conversation
+              Email me
             </a>
           </motion.div>
 
@@ -471,10 +471,10 @@ function HeroSection() {
         >
           <div className="stats-row hero-stats">
             {[
-              { value: "5+", label: "Years Experience" },
-              { value: "5", label: "Professional Roles" },
+              { value: "6+", label: "Years of experience" },
+              { value: "5", label: "Roles" },
               { value: "5", label: "Certifications" },
-              { value: "4", label: "Technical Domains" },
+              { value: "4", label: "Areas of work" },
             ].map((stat) => (
               <div key={stat.label} className="stat-item">
                 <div className="stat-value">{stat.value}</div>
@@ -482,14 +482,13 @@ function HeroSection() {
               </div>
             ))}
           </div>
-          <p className="label">Core capabilities</p>
+          <p className="label">What I work on</p>
           <ul>
-            <li><span>01</span> Product-oriented web applications</li>
+            <li><span>01</span> Web applications</li>
             <li><span>02</span> APIs, middleware, and integrations</li>
             <li><span>03</span> Database and data-flow design</li>
-            <li><span>04</span> Containerised platform delivery</li>
+            <li><span>04</span> Containers and deployment</li>
           </ul>
-          <p className="hero-summary-note">Turning complex operational needs into reliable software.</p>
         </motion.aside>
       </div>
     </Section>
@@ -507,8 +506,8 @@ function ProjectsSection() {
     <Section id="projects" className="section--gradient">
       <SectionHeader
         label="Selected work"
-        title="Systems built for real operations"
-        subtitle="A selection of product and platform work across the modern web stack."
+        title="A few projects"
+        subtitle="Tools for project setup, retail inventory, and API monitoring."
       />
 
       <motion.div
@@ -556,8 +555,8 @@ function ExperienceSection() {
     <Section id="experience" className="section--dark">
       <SectionHeader
         label="Experience"
-        title="Professional track record"
-        subtitle="Over five years building software and business solutions across multiple industries."
+        title="Work history"
+        subtitle="Since 2019, I've worked in software roles at Meratus Line, Graha Multi Bintang, and SMART IT."
       />
 
       <motion.div
@@ -597,9 +596,8 @@ function SkillsSection() {
   return (
     <Section id="skills" className="section--glow">
       <SectionHeader
-        label="Technical expertise"
-        title="Tools chosen for the job"
-        subtitle="A practical toolkit across frontend, backend, data, and platform delivery."
+        label="Skills"
+        title="Tools I use"
       />
 
       <motion.div
@@ -652,8 +650,7 @@ function CredentialsSection() {
     <Section id="credentials" className="section--gradient">
       <SectionHeader
         label="Credentials"
-        title="Credentials and education"
-        subtitle="Professional certifications and academic background."
+        title="Education and certifications"
       />
 
       {/* Certificates */}
@@ -751,10 +748,10 @@ function ContactSection() {
           Contact
         </motion.p>
         <motion.h2 className="headline-lg section-title gradient-text-subtle" variants={fadeInUp} transition={{ duration: 0.5 }}>
-          Let’s discuss your next project
+          Get in touch
         </motion.h2>
         <motion.p className="body-md" style={{ maxWidth: 560, marginBottom: 48 }} variants={fadeInUp} transition={{ duration: 0.5 }}>
-          I’m available to discuss software development, systems integration, and technical discovery for your next initiative.
+          I'm open to full-stack development and systems integration projects. Email me if you have something in mind.
         </motion.p>
 
         <motion.div className="contact-grid" variants={fadeInUp} transition={{ duration: 0.5 }}>
@@ -800,9 +797,9 @@ function ContactSection() {
           </div>
 
           <aside className="contact-panel">
-            <p className="label">A practical partnership</p>
-            <p>I work comfortably across product, platform, and integration concerns—especially where reliability and maintainability matter.</p>
-            <div className="contact-panel-detail">Typically available for full-stack development, integration work, and technical discovery.</div>
+            <p className="label">What I can help with</p>
+            <p>Web applications, APIs, middleware, and database work.</p>
+            <div className="contact-panel-detail">I can also help with technical discovery.</div>
           </aside>
         </motion.div>
       </motion.div>
