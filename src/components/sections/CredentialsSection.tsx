@@ -17,7 +17,6 @@ export function CredentialsSection() {
       <SectionHeader
         label={credentialsSectionContent.label}
         title={credentialsSectionContent.title}
-        subtitle={credentialsSectionContent.subtitle}
       />
 
       <motion.div

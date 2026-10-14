@@ -13,7 +13,6 @@ export function SkillsSection() {
       <SectionHeader
         label={skillsSectionContent.label}
         title={skillsSectionContent.title}
-        subtitle={skillsSectionContent.subtitle}
       />
 
       <motion.div
