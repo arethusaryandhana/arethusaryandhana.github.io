@@ -13,7 +13,11 @@ import {
 
 function getSavedLanguage(): Language {
   try {
-    return window.localStorage.getItem("aa-language") === "id" ? "id" : "en";
+    const saved = window.localStorage.getItem("aa-language");
+    if (saved === "id" || saved === "en") {
+      return saved;
+    }
+    return window.navigator.language?.toLowerCase().startsWith("id") ? "id" : "en";
   } catch {
     return "en";
   }

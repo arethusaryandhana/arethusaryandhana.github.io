@@ -2,19 +2,27 @@ import {
   useCallback,
   useEffect,
   useState,
+  type MouseEvent,
   type ReactNode,
 } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
-  techIcons,
-  socialIcons,
+  AnimatePresence,
+  motion,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+} from "framer-motion";
+import {
   BriefcaseIcon,
   CertificateIcon,
   GraduationIcon,
   ExternalLinkIcon,
 } from "./icons";
+import { techIcons, socialIcons } from "./iconMaps";
 import { LanguageProvider } from "./components/LanguageProvider";
 import { useLanguage } from "./i18n";
+import { useTheme } from "./hooks/useTheme";
+import type { ThemeMode } from "./lib/theme";
 
 /* ═══════════════════════════════════════════════════════
    DATA
@@ -47,12 +55,12 @@ const projects = [
   },
 ];
 
-const experience = [
-  { company: "PT. Meratus Line" },
-  { company: "PT. Meratus Line" },
-  { company: "PT. Graha Multi Bintang" },
-  { company: "PT. Graha Multi Bintang" },
-  { company: "PT. SMART IT" },
+const experienceCompanies = [
+  "PT. Meratus Line",
+  "PT. Meratus Line",
+  "PT. Graha Multi Bintang",
+  "PT. Graha Multi Bintang",
+  "PT. SMART IT",
 ];
 
 const certificates = [
@@ -96,69 +104,44 @@ const socials = [
 
 const skillGroups = [
   {
-    label: "Frontend",
-    items: [
-      { name: "React", level: 92 },
-      { name: "Vue.js", level: 78 },
-      { name: "TypeScript", level: 88 },
-    ],
+    key: "frontend",
+    items: ["React", "Vue.js", "TypeScript"],
   },
   {
-    label: "Backend",
-    items: [
-      { name: "Node.js", level: 90 },
-      { name: "PHP", level: 82 },
-      { name: "Laravel", level: 80 },
-      { name: ".NET", level: 70 },
-      { name: "Golang", level: 65 },
-    ],
+    key: "backend",
+    items: ["Node.js", "PHP", "Laravel", ".NET", "Golang"],
   },
   {
-    label: "Database",
-    items: [
-      { name: "PostgreSQL", level: 88 },
-      { name: "MySQL", level: 85 },
-      { name: "SQL Server", level: 80 },
-      { name: "MongoDB", level: 72 },
-      { name: "Redis", level: 78 },
-    ],
+    key: "database",
+    items: ["PostgreSQL", "MySQL", "SQL Server", "MongoDB", "Redis"],
   },
   {
-    label: "Platform & Tools",
-    items: [
-      { name: "Docker", level: 85 },
-      { name: "Kubernetes", level: 70 },
-      { name: "Kafka", level: 72 },
-      { name: "WebSocket", level: 82 },
-    ],
+    key: "infra",
+    items: ["Docker", "Kubernetes", "Kafka", "WebSocket"],
   },
 ];
 
-const bootLineDelays = [0, 160, 320, 480, 640, 800];
+const totalTechnologies = skillGroups.reduce((sum, group) => sum + group.items.length, 0);
+const bootLineDelays = [0, 140, 280, 420];
 
 /* ═══════════════════════════════════════════════════════
    ANIMATION VARIANTS
    ═══════════════════════════════════════════════════════ */
 
 const fadeInUp = {
-  hidden: { opacity: 0, y: 30 },
+  hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0 },
-};
-
-const fadeIn = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1 },
 };
 
 const stagger = {
   visible: {
-    transition: { staggerChildren: 0.08 },
+    transition: { staggerChildren: 0.07 },
   },
 };
 
 const staggerSlow = {
   visible: {
-    transition: { staggerChildren: 0.12 },
+    transition: { staggerChildren: 0.1 },
   },
 };
 
@@ -169,9 +152,11 @@ function useActiveSection() {
     const observer = new IntersectionObserver(
       (entries) => {
         const visibleSection = entries.find((entry) => entry.isIntersecting);
-        if (visibleSection) setActiveId(visibleSection.target.id);
+        if (visibleSection) {
+          setActiveId(visibleSection.target.id);
+        }
       },
-      { rootMargin: "-40% 0px -50% 0px" },
+      { rootMargin: "-35% 0px -55% 0px" },
     );
 
     document.querySelectorAll("section[id]").forEach((section) => observer.observe(section));
@@ -179,6 +164,57 @@ function useActiveSection() {
   }, []);
 
   return activeId;
+}
+
+function handleCardMouseMove(event: MouseEvent<HTMLElement>) {
+  const target = event.currentTarget;
+  const rect = target.getBoundingClientRect();
+  target.style.setProperty("--spot-x", `${event.clientX - rect.left}px`);
+  target.style.setProperty("--spot-y", `${event.clientY - rect.top}px`);
+}
+
+function AmbientBackdrop() {
+  const reduced = useReducedMotion();
+
+  useEffect(() => {
+    if (reduced) {
+      return;
+    }
+
+    let rafId = 0;
+    const handlePointerMove = (event: PointerEvent) => {
+      if (event.pointerType !== "mouse") {
+        return;
+      }
+
+      if (rafId) {
+        return;
+      }
+
+      rafId = window.requestAnimationFrame(() => {
+        document.documentElement.style.setProperty("--mouse-x", `${event.clientX}px`);
+        document.documentElement.style.setProperty("--mouse-y", `${event.clientY}px`);
+        rafId = 0;
+      });
+    };
+
+    window.addEventListener("pointermove", handlePointerMove, { passive: true });
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      if (rafId) {
+        window.cancelAnimationFrame(rafId);
+      }
+    };
+  }, [reduced]);
+
+  return (
+    <div className="ambient-backdrop" aria-hidden="true">
+      <div className="aurora-orb aurora-orb--1" />
+      <div className="aurora-orb aurora-orb--2" />
+      <div className="aurora-orb aurora-orb--3" />
+      <div className="pointer-glow" />
+    </div>
+  );
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -217,17 +253,17 @@ function SectionHeader({
       className="section-header"
       initial={reduced ? false : "hidden"}
       whileInView="visible"
-      viewport={{ once: true, amount: 0.3 }}
+      viewport={{ once: true, amount: 0.25 }}
       variants={stagger}
     >
-      <motion.p className="label section-label" variants={fadeInUp} transition={{ duration: 0.5 }}>
+      <motion.p className="eyebrow section-label" variants={fadeInUp} transition={{ duration: 0.45 }}>
         {label}
       </motion.p>
-      <motion.h2 className="headline-lg section-title gradient-text-subtle" variants={fadeInUp} transition={{ duration: 0.5 }}>
+      <motion.h2 className="headline-lg section-title" variants={fadeInUp} transition={{ duration: 0.45 }}>
         {title}
       </motion.h2>
       {subtitle && (
-        <motion.p className="body-md section-subtitle" variants={fadeInUp} transition={{ duration: 0.5 }}>
+        <motion.p className="body-md section-subtitle" variants={fadeInUp} transition={{ duration: 0.45 }}>
           {subtitle}
         </motion.p>
       )}
@@ -245,7 +281,7 @@ function ArrowIcon({ size = 16 }: { size?: number }) {
 
 function MenuIcon({ open }: { open: boolean }) {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
       {open ? (
         <>
           <path d="M6 6l12 12" />
@@ -253,15 +289,33 @@ function MenuIcon({ open }: { open: boolean }) {
         </>
       ) : (
         <>
-          <path d="M4 8h16" />
-          <path d="M4 16h16" />
+          <path d="M4 7h16" />
+          <path d="M4 12h16" />
+          <path d="M4 17h16" />
         </>
       )}
     </svg>
   );
 }
 
-function ChevronDown({ size = 20 }: { size?: number }) {
+function ThemeIcon({ theme }: { theme: ThemeMode }) {
+  if (theme === "dark") {
+    return (
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+    </svg>
+  );
+}
+
+function ChevronDown({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M5 8l5 5 5-5" />
@@ -288,14 +342,29 @@ function BootSequence({ onComplete }: { onComplete: () => void }) {
         setProgress(Math.round(((index + 1) / lines.length) * 100));
       }, bootLineDelays[index]),
     );
-    timers.push(window.setTimeout(onComplete, (bootLineDelays.at(-1) ?? 800) + 550));
+    timers.push(window.setTimeout(onComplete, (bootLineDelays.at(-1) ?? 420) + 360));
 
-    return () => timers.forEach(clearTimeout);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onComplete();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      timers.forEach(clearTimeout);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [onComplete, reduced, lines]);
 
   return (
-    <motion.div className="boot-screen" exit={{ opacity: 0 }} transition={{ duration: 0.35 }}>
-      <div className="boot-content">
+    <motion.div
+      className="boot-screen"
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25 }}
+      onClick={onComplete}
+    >
+      <div className="boot-card" onClick={(event) => event.stopPropagation()}>
         <p className="boot-kicker">{t.boot.kicker}</p>
         {lines.slice(0, visibleLines).map((line) => (
           <motion.div
@@ -303,7 +372,7 @@ function BootSequence({ onComplete }: { onComplete: () => void }) {
             className="boot-line"
             initial={{ opacity: 0, x: -6 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.14 }}
+            transition={{ duration: 0.12 }}
           >
             {line.includes("[READY]") ? (
               <>
@@ -315,16 +384,21 @@ function BootSequence({ onComplete }: { onComplete: () => void }) {
                 {line.replace("[OK]", "")}
                 <span className="boot-ok">[OK]</span>
               </>
-            ) : line}
+            ) : (
+              line
+            )}
           </motion.div>
         ))}
         <div className="boot-progress">
           <div className="boot-progress-bar" style={{ width: `${progress}%` }} />
         </div>
-        <div className="boot-percent">
-          {progress < 100
-            ? `${progress}% / ${t.boot.loading}`
-            : `100% / ${t.boot.ready}`}
+        <div className="boot-footer">
+          <span className="boot-percent">
+            {progress < 100 ? `${progress}% · ${t.boot.loading}` : `100% · ${t.boot.ready}`}
+          </span>
+          <button type="button" className="boot-skip" onClick={onComplete}>
+            {t.boot.skip}
+          </button>
         </div>
       </div>
     </motion.div>
@@ -335,36 +409,63 @@ function BootSequence({ onComplete }: { onComplete: () => void }) {
    NAVIGATION
    ═══════════════════════════════════════════════════════ */
 
-function Navigation({ activeId }: { activeId: string }) {
+function Navigation({
+  activeId,
+  theme,
+  onToggleTheme,
+}: {
+  activeId: string;
+  theme: ThemeMode;
+  onToggleTheme: () => void;
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
   const { language, setLanguage, t } = useLanguage();
+  const reduced = useReducedMotion();
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 140,
+    damping: 28,
+    restDelta: 0.001,
+  });
+  const themeLabel = theme === "dark" ? t.navigation.themeToLight : t.navigation.themeToDark;
 
   const scrollTo = (id: string) => {
     setMenuOpen(false);
     const section = document.getElementById(id);
-    if (section) window.scrollTo({ top: section.offsetTop, behavior: "smooth" });
+    if (section) {
+      section.scrollIntoView({ behavior: "smooth" });
+    }
   };
 
   return (
     <nav className="nav">
       <div className="nav-inner">
-        <button className="nav-logo" onClick={() => scrollTo("about")} type="button" aria-label={t.navigation.homeLabel}>
-          A.
+        <button
+          className="nav-logo"
+          onClick={() => scrollTo("about")}
+          type="button"
+          aria-label={t.navigation.homeLabel}
+        >
+          <span className="nav-logo-mark">AA</span>
+          <span className="nav-logo-text">Arethusa</span>
         </button>
 
-        <ul className={`nav-links ${menuOpen ? "nav-links--open" : ""}`}>
-          {navItems.map((item, index) => (
-            <li key={item.id}>
-              <button
-                className={`nav-link ${activeId === item.id ? "nav-link--active" : ""}`}
-                onClick={() => scrollTo(item.id)}
-                type="button"
-              >
-                {t.navigation.items[index]}
-              </button>
-            </li>
-          ))}
-          <li>
+        <div className={`nav-menu ${menuOpen ? "nav-menu--open" : ""}`}>
+          <ul className="nav-links">
+            {navItems.map((item, index) => (
+              <li key={item.id}>
+                <button
+                  className={`nav-link ${activeId === item.id ? "nav-link--active" : ""}`}
+                  onClick={() => scrollTo(item.id)}
+                  type="button"
+                >
+                  {t.navigation.items[index]}
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <div className="nav-actions">
             <div className="language-switch" role="group" aria-label={t.navigation.languageLabel}>
               {(["en", "id"] as const).map((option) => (
                 <button
@@ -383,25 +484,52 @@ function Navigation({ activeId }: { activeId: string }) {
                 </button>
               ))}
             </div>
-          </li>
-          <li>
-            <a
-              className="nav-cta"
-              href="mailto:ryan.arethusa@gmail.com"
+
+            <button
+              type="button"
+              className="theme-toggle"
+              onClick={onToggleTheme}
+              aria-label={themeLabel}
+              title={themeLabel}
             >
+              <ThemeIcon theme={theme} />
+            </button>
+
+            <a className="nav-cta" href="mailto:ryan.arethusa@gmail.com">
               {t.navigation.contact}
             </a>
-          </li>
-        </ul>
+          </div>
+        </div>
 
-        <button
-          className="nav-toggle"
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label={t.navigation.menuLabel}
-        >
-          <MenuIcon open={menuOpen} />
-        </button>
+        <div className="nav-mobile-controls">
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={onToggleTheme}
+            aria-label={themeLabel}
+            title={themeLabel}
+          >
+            <ThemeIcon theme={theme} />
+          </button>
+
+          <button
+            type="button"
+            className="nav-toggle"
+            onClick={() => setMenuOpen((prev) => !prev)}
+            aria-label={t.navigation.menuLabel}
+            aria-expanded={menuOpen}
+          >
+            <MenuIcon open={menuOpen} />
+          </button>
+        </div>
       </div>
+      {!reduced && (
+        <motion.div
+          className="nav-scroll-progress"
+          style={{ scaleX }}
+          aria-hidden="true"
+        />
+      )}
     </nav>
   );
 }
@@ -414,75 +542,83 @@ function HeroSection() {
   const reduced = useReducedMotion();
   const { t } = useLanguage();
 
+  const stats = [
+    { value: "6+", label: t.hero.stats[0] },
+    { value: `${totalTechnologies}+`, label: t.hero.stats[1] },
+    { value: String(experienceCompanies.length), label: t.hero.stats[2] },
+    { value: String(certificates.length), label: t.hero.stats[3] },
+  ];
+
   return (
     <Section id="about" className="section--hero">
       <div className="hero-layout">
-      <div className="hero-content">
-        <motion.div
-          initial={reduced ? false : "hidden"}
-          animate="visible"
-          variants={stagger}
-        >
-          <motion.div variants={fadeInUp} transition={{ duration: 0.6 }}>
-            <p className="label hero-eyebrow">{t.hero.eyebrow}</p>
+        <div className="hero-content">
+          <motion.div initial={reduced ? false : "hidden"} animate="visible" variants={stagger}>
+            <motion.div className="hero-meta-row" variants={fadeInUp} transition={{ duration: 0.45 }}>
+              <span className="status-pill">
+                <span className="status-dot" />
+                {t.hero.status}
+              </span>
+              <span className="location-pill">{t.hero.location}</span>
+            </motion.div>
+
+            <motion.h1 className="headline-xl hero-name" variants={fadeInUp} transition={{ duration: 0.5 }}>
+              Arethusa Aryandhana
+            </motion.h1>
+
+            <motion.p className="hero-role-line gradient-text" variants={fadeInUp} transition={{ duration: 0.5 }}>
+              {t.hero.role} · {t.hero.title}
+            </motion.p>
+
+            <motion.p className="hero-desc" variants={fadeInUp} transition={{ duration: 0.5 }}>
+              {t.hero.description}
+            </motion.p>
+
+            <motion.div className="hero-cta-row" variants={fadeInUp} transition={{ duration: 0.5 }}>
+              <a
+                href="#projects"
+                className="btn-primary"
+                onClick={(event) => {
+                  event.preventDefault();
+                  document.getElementById("projects")?.scrollIntoView({ behavior: "smooth" });
+                }}
+              >
+                {t.hero.viewWork}
+                <ChevronDown />
+              </a>
+              <a href="mailto:ryan.arethusa@gmail.com" className="btn-secondary">
+                {t.hero.email}
+              </a>
+            </motion.div>
           </motion.div>
+        </div>
 
-          <motion.h1 className="headline-xl hero-name" variants={fadeInUp} transition={{ duration: 0.6 }}>
-            Arethusa
-            <br />
-            Aryandhana
-          </motion.h1>
-
-          {/* Title */}
-          <motion.p className="hero-title" variants={fadeInUp} transition={{ duration: 0.6 }}>
-            {t.hero.title}
-          </motion.p>
-
-          {/* Description */}
-          <motion.p className="hero-desc" variants={fadeInUp} transition={{ duration: 0.6 }}>
-            {t.hero.description}
-          </motion.p>
-
-          <motion.p className="hero-focus" variants={fadeIn} transition={{ duration: 0.4, delay: 0.6 }}>
-            {t.hero.focus}
-          </motion.p>
-
-          {/* CTA */}
-          <motion.div className="hero-cta-row" variants={fadeInUp} transition={{ duration: 0.6 }}>
-            <a href="#projects" className="btn-primary" onClick={(event) => { event.preventDefault(); const section = document.getElementById("projects"); if (section) window.scrollTo({ top: section.offsetTop, behavior: "smooth" }); }}>
-              {t.hero.viewWork}
-              <ChevronDown size={16} />
-            </a>
-            <a href="mailto:ryan.arethusa@gmail.com" className="btn-secondary">
-              {t.hero.email}
-            </a>
-          </motion.div>
-
-        </motion.div>
-      </div>
         <motion.aside
-          className="hero-summary"
-          initial={reduced ? false : { opacity: 0, x: 20 }}
-          animate={reduced ? undefined : { opacity: 1, x: 0 }}
-          transition={{ duration: 0.7, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          className="hero-bento spotlight-card"
+          onMouseMove={handleCardMouseMove}
+          initial={reduced ? false : { opacity: 0, y: 16 }}
+          animate={reduced ? undefined : { opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, delay: 0.2 }}
         >
-          <div className="stats-row hero-stats">
-            {[
-              { value: "6+", label: t.hero.stats[0] },
-              { value: "5", label: t.hero.stats[1] },
-              { value: "5", label: t.hero.stats[2] },
-              { value: "4", label: t.hero.stats[3] },
-            ].map((stat) => (
-              <div key={stat.label} className="stat-item">
+          <div className="hero-stats-grid">
+            {stats.map((stat) => (
+              <div key={stat.label} className="stat-card">
                 <div className="stat-value">{stat.value}</div>
                 <div className="stat-label">{stat.label}</div>
               </div>
             ))}
           </div>
-          <p className="label">{t.hero.workLabel}</p>
-          <ul>
+
+          <p className="hero-bento-heading">{t.hero.workLabel}</p>
+          <ul className="hero-focus-list">
             {t.hero.workItems.map((item, index) => (
-              <li key={item}><span>0{index + 1}</span> {item}</li>
+              <li key={item.title} className="hero-focus-item">
+                <span className="hero-focus-num">0{index + 1}</span>
+                <div>
+                  <div className="hero-focus-title">{item.title}</div>
+                  <div className="hero-focus-detail">{item.detail}</div>
+                </div>
+              </li>
             ))}
           </ul>
         </motion.aside>
@@ -500,7 +636,7 @@ function ProjectsSection() {
   const { t } = useLanguage();
 
   return (
-    <Section id="projects" className="section--gradient">
+    <Section id="projects" className="section--alt">
       <SectionHeader
         label={t.projects.label}
         title={t.projects.title}
@@ -508,34 +644,55 @@ function ProjectsSection() {
       />
 
       <motion.div
-        style={{ display: "grid", gap: 20, gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))" }}
+        className="projects-grid"
         initial={reduced ? false : "hidden"}
         whileInView="visible"
-        viewport={{ once: true, amount: 0.1 }}
+        viewport={{ once: true, amount: 0.15 }}
         variants={stagger}
       >
-        {projects.map((p, index) => (
-          <motion.div key={p.name} variants={fadeInUp} transition={{ duration: 0.5 }}>
-            <div className="card" style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                  <h3 className="card-title">{p.name}</h3>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <a href={p.repo} target="_blank" rel="noreferrer" className="btn-icon" style={{ width: 32, height: 32 }} aria-label={t.projects.repositoryLabel.replace("{name}", p.name)}>
-                      <ExternalLinkIcon size={14} />
-                    </a>
-                  </div>
+        {projects.map((project, index) => {
+          const copy = t.projects.items[index];
+
+          return (
+            <motion.article key={project.name} variants={fadeInUp} transition={{ duration: 0.45 }}>
+              <div className="project-card spotlight-card" onMouseMove={handleCardMouseMove}>
+                <div className="project-card-top">
+                  <span className="project-category">{copy.category}</span>
+                  <span className="project-index">0{index + 1}</span>
                 </div>
-                <p className="card-desc">{t.projects.descriptions[index]}</p>
+
+                <h3 className="project-title">{project.name}</h3>
+                <p className="project-desc">{copy.description}</p>
+                <p className="project-highlight">{copy.highlight}</p>
+
+                <div className="project-footer">
+                  <div className="tag-list">
+                    {project.tech.map((tech) => {
+                      const Icon = techIcons[tech];
+                      return (
+                        <span key={tech} className="tech-tag">
+                          {Icon && <Icon size={14} />}
+                          {tech}
+                        </span>
+                      );
+                    })}
+                  </div>
+
+                  <a
+                    href={project.repo}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="project-link"
+                    aria-label={t.projects.repositoryLabel.replace("{name}", project.name)}
+                  >
+                    <span>{t.projects.viewRepo}</span>
+                    <ExternalLinkIcon size={14} />
+                  </a>
+                </div>
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {p.tech.map((t) => (
-                  <span key={t} className="tag">{t}</span>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        ))}
+            </motion.article>
+          );
+        })}
       </motion.div>
     </Section>
   );
@@ -550,7 +707,7 @@ function ExperienceSection() {
   const { t } = useLanguage();
 
   return (
-    <Section id="experience" className="section--dark">
+    <Section id="experience" className="section--base">
       <SectionHeader
         label={t.experience.label}
         title={t.experience.title}
@@ -564,21 +721,36 @@ function ExperienceSection() {
         viewport={{ once: true, amount: 0.1 }}
         variants={staggerSlow}
       >
-        {experience.map((exp, index) => (
-          <motion.div
-            key={`${exp.company}-${index}`}
-            className="timeline-item"
-            variants={fadeInUp}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="timeline-dot" />
-            <div className="timeline-card">
-              <div className="timeline-role">{t.experience.roles[index]}</div>
-              <div className="timeline-company">{exp.company}</div>
-              <div className="timeline-period">{t.experience.periods[index]}</div>
-            </div>
-          </motion.div>
-        ))}
+        {experienceCompanies.map((company, index) => {
+          const item = t.experience.items[index];
+          const isCurrent = index === 0;
+
+          return (
+            <motion.div
+              key={`${company}-${item.role}-${index}`}
+              className="timeline-item"
+              variants={fadeInUp}
+              transition={{ duration: 0.45 }}
+            >
+              <div className={`timeline-dot ${isCurrent ? "timeline-dot--current" : ""}`} />
+              <div className="timeline-card spotlight-card" onMouseMove={handleCardMouseMove}>
+                <div className="timeline-top">
+                  <div>
+                    <div className="timeline-role">{item.role}</div>
+                    <div className="timeline-company">{company}</div>
+                  </div>
+                  <div className="timeline-meta">
+                    <span className="timeline-period">{item.period}</span>
+                    {isCurrent && (
+                      <span className="timeline-current-badge">{t.experience.currentBadge}</span>
+                    )}
+                  </div>
+                </div>
+                <p className="timeline-summary">{item.summary}</p>
+              </div>
+            </motion.div>
+          );
+        })}
       </motion.div>
     </Section>
   );
@@ -593,53 +765,59 @@ function SkillsSection() {
   const { t } = useLanguage();
 
   return (
-    <Section id="skills" className="section--glow">
+    <Section id="skills" className="section--alt">
       <SectionHeader
         label={t.skills.label}
         title={t.skills.title}
+        subtitle={t.skills.subtitle}
       />
 
       <motion.div
-        style={{ display: "grid", gap: 24, gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}
+        className="skills-bento"
         initial={reduced ? false : "hidden"}
         whileInView="visible"
-        viewport={{ once: true, amount: 0.1 }}
+        viewport={{ once: true, amount: 0.15 }}
         variants={stagger}
       >
-        {skillGroups.map((group, index) => (
-          <motion.div key={group.label} variants={fadeInUp} transition={{ duration: 0.5 }}>
-            <div className="card">
-              <div className="skills-group-title">{t.skills.groups[index]}</div>
-              {group.items.map((item) => {
-                const Icon = techIcons[item.name];
-                return (
-                  <div key={item.name} className="skill-item">
-                    <div className="skill-icon">
-                      {Icon ? <Icon size={18} /> : <BriefcaseIcon size={18} />}
-                    </div>
-                    <span className="skill-name">{item.name}</span>
-                    <div className="skill-bar-track">
-                      <motion.div
-                        className="skill-bar-fill"
-                        initial={{ width: 0 }}
-                        whileInView={{ width: `${item.level}%` }}
-                        viewport={{ once: true, amount: 0.5 }}
-                        transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </motion.div>
-        ))}
+        {skillGroups.map((group, index) => {
+          const groupCopy = t.skills.groups[index];
+
+          return (
+            <motion.div
+              key={group.key}
+              className="skill-group-card spotlight-card"
+              onMouseMove={handleCardMouseMove}
+              variants={fadeInUp}
+              transition={{ duration: 0.45 }}
+            >
+              <div className="skill-group-header">
+                <h3 className="skill-group-title">{groupCopy.title}</h3>
+                <p className="skill-group-desc">{groupCopy.description}</p>
+              </div>
+
+              <div className="skill-chips">
+                {group.items.map((techName) => {
+                  const Icon = techIcons[techName];
+                  return (
+                    <span key={techName} className="skill-chip">
+                      <span className="skill-chip-icon">
+                        {Icon ? <Icon size={18} /> : <BriefcaseIcon size={18} />}
+                      </span>
+                      <span>{techName}</span>
+                    </span>
+                  );
+                })}
+              </div>
+            </motion.div>
+          );
+        })}
       </motion.div>
     </Section>
   );
 }
 
 /* ═══════════════════════════════════════════════════════
-   CREDENTIALS SECTION (Certificates + Education)
+   CREDENTIALS SECTION (Education + Certificates)
    ═══════════════════════════════════════════════════════ */
 
 function CredentialsSection() {
@@ -647,73 +825,78 @@ function CredentialsSection() {
   const { t } = useLanguage();
 
   return (
-    <Section id="credentials" className="section--gradient">
+    <Section id="credentials" className="section--base">
       <SectionHeader
         label={t.credentials.label}
         title={t.credentials.title}
+        subtitle={t.credentials.subtitle}
       />
 
-      {/* Certificates */}
-      <motion.div
-        style={{ display: "grid", gap: 12, marginBottom: 60 }}
-        initial={reduced ? false : "hidden"}
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.1 }}
-        variants={stagger}
-      >
-        {certificates.map((cert) => (
-          <motion.a
-            key={cert.title}
-            href={cert.href}
-            target="_blank"
-            rel="noreferrer"
-            className="cert-card"
-            variants={fadeInUp}
-            transition={{ duration: 0.4 }}
-          >
-            <div className="cert-icon">
-              <CertificateIcon size={20} />
-            </div>
-            <div>
-              <div className="cert-title">{cert.title}</div>
-              <div className="cert-meta">
-                {cert.issuer} · {cert.year}
+      <div className="credentials-layout">
+        <motion.div
+          initial={reduced ? false : "hidden"}
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.25 }}
+          variants={fadeInUp}
+          transition={{ duration: 0.45 }}
+        >
+          <p className="credentials-col-label">{t.credentials.education}</p>
+          <div className="edu-card spotlight-card" onMouseMove={handleCardMouseMove}>
+            <div className="edu-top">
+              <div className="edu-icon">
+                <GraduationIcon size={22} />
               </div>
-              <div className="cert-verify">
-                ✓ {t.credentials.verified}
-              </div>
+              <span className="edu-badge">{t.credentials.educationBadge}</span>
             </div>
-          </motion.a>
-        ))}
-      </motion.div>
-
-      {/* Education */}
-      <motion.div
-        initial={reduced ? false : "hidden"}
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.3 }}
-        variants={stagger}
-      >
-        <motion.p className="label" style={{ marginBottom: 16 }} variants={fadeInUp} transition={{ duration: 0.5 }}>
-          {t.credentials.education}
-        </motion.p>
-        <motion.div variants={fadeInUp} transition={{ duration: 0.5 }}>
-          <div className="edu-card">
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-              <div className="cert-icon">
-                <GraduationIcon size={20} />
-              </div>
-              <span style={{ fontSize: 13, color: "var(--text-tertiary)" }}>{t.credentials.educationBadge}</span>
-            </div>
-            <div className="edu-degree">{t.credentials.degree}</div>
+            <h3 className="edu-degree">{t.credentials.degree}</h3>
             <div className="edu-university">{t.credentials.university}</div>
-            <div className="edu-period">2015 — 2019</div>
-            <div className="edu-status">
-              <span>🎓</span> {t.credentials.graduated}
-            </div>
+            <p className="edu-note">{t.credentials.educationNote}</p>
+            <div className="edu-status">{t.credentials.graduated}</div>
           </div>
         </motion.div>
-      </motion.div>
+
+        <motion.div
+          initial={reduced ? false : "hidden"}
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.15 }}
+          variants={stagger}
+        >
+          <p className="credentials-col-label">{t.credentials.certsLabel}</p>
+          <div className="certs-list">
+            {certificates.map((cert) => (
+              <motion.a
+                key={cert.title}
+                href={cert.href}
+                target="_blank"
+                rel="noreferrer"
+                className="cert-card spotlight-card"
+                onMouseMove={handleCardMouseMove}
+                variants={fadeInUp}
+                transition={{ duration: 0.4 }}
+              >
+                <div className="cert-main">
+                  <div className="cert-icon">
+                    <CertificateIcon size={20} />
+                  </div>
+                  <div>
+                    <div className="cert-title">{cert.title}</div>
+                    <div className="cert-meta">
+                      <span>{cert.issuer}</span>
+                      <span>·</span>
+                      <span>{cert.year}</span>
+                      <span>·</span>
+                      <span className="cert-verified">✓ {t.credentials.verified}</span>
+                    </div>
+                  </div>
+                </div>
+                <span className="cert-arrow" aria-label={t.credentials.viewCert}>
+                  <ExternalLinkIcon size={15} />
+                </span>
+              </motion.a>
+            ))}
+          </div>
+        </motion.div>
+      </div>
     </Section>
   );
 }
@@ -733,76 +916,97 @@ function ContactSection() {
       setCopyState("copied");
       window.setTimeout(() => setCopyState("idle"), 2000);
     } catch {
-      // fallback - do nothing
+      // Clipboard unavailable in restricted context.
     }
   }, []);
 
   return (
-    <Section id="contact" className="section--dark">
+    <Section id="contact" className="section--alt">
+      <SectionHeader
+        label={t.contact.label}
+        title={t.contact.title}
+        subtitle={t.contact.description}
+      />
+
       <motion.div
+        className="contact-grid"
         initial={reduced ? false : "hidden"}
         whileInView="visible"
-        viewport={{ once: true, amount: 0.3 }}
+        viewport={{ once: true, amount: 0.2 }}
         variants={stagger}
       >
-        <motion.p className="label section-label" variants={fadeInUp} transition={{ duration: 0.5 }}>
-          {t.contact.label}
-        </motion.p>
-        <motion.h2 className="headline-lg section-title gradient-text-subtle" variants={fadeInUp} transition={{ duration: 0.5 }}>
-          {t.contact.title}
-        </motion.h2>
-        <motion.p className="body-md" style={{ maxWidth: 560, marginBottom: 48 }} variants={fadeInUp} transition={{ duration: 0.5 }}>
-          {t.contact.description}
-        </motion.p>
-
-        <motion.div className="contact-grid" variants={fadeInUp} transition={{ duration: 0.5 }}>
-          <div className="contact-info">
-            <div>
-              <div style={{ fontSize: 13, color: "var(--text-tertiary)", marginBottom: 8 }}>{t.contact.email}</div>
-              <a href="mailto:ryan.arethusa@gmail.com" className="contact-email">
-                ryan.arethusa@gmail.com
-              </a>
-            </div>
-
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-              <a href="mailto:ryan.arethusa@gmail.com" className="btn-primary">
-                {t.contact.sendEmail}
-                <ArrowIcon />
-              </a>
-              <button onClick={copyEmail} className="btn-secondary" type="button">
-                {copyState === "copied" ? t.contact.copiedEmail : t.contact.copyEmail}
-              </button>
-            </div>
-
-            <div>
-              <div style={{ fontSize: 13, color: "var(--text-tertiary)", marginBottom: 12 }}>{t.contact.findMe}</div>
-              <div className="social-links">
-                {socials.map((s) => {
-                  const Icon = socialIcons[s.label];
-                  return (
-                    <a
-                      key={s.label}
-                      href={s.href}
-                      target={s.href.startsWith("mailto:") ? undefined : "_blank"}
-                      rel={s.href.startsWith("mailto:") ? undefined : "noreferrer"}
-                      className="btn-icon"
-                      aria-label={s.label}
-                      title={s.label}
-                    >
-                      {Icon ? <Icon size={20} /> : s.label[0]}
-                    </a>
-                  );
-                })}
-              </div>
-            </div>
+        <motion.div
+          className="contact-card spotlight-card"
+          onMouseMove={handleCardMouseMove}
+          variants={fadeInUp}
+          transition={{ duration: 0.45 }}
+        >
+          <div>
+            <div className="contact-field-label">{t.contact.email}</div>
+            <a href="mailto:ryan.arethusa@gmail.com" className="contact-email">
+              ryan.arethusa@gmail.com
+            </a>
           </div>
 
-          <aside className="contact-panel">
-            <p className="label">{t.contact.panelTitle}</p>
-            <p>{t.contact.panelDescription}</p>
-            <div className="contact-panel-detail">{t.contact.panelDetail}</div>
-          </aside>
+          <div className="contact-cta-row">
+            <a href="mailto:ryan.arethusa@gmail.com" className="btn-primary">
+              <span>{t.contact.sendEmail}</span>
+              <ArrowIcon />
+            </a>
+            <button onClick={copyEmail} className="btn-secondary" type="button">
+              {copyState === "copied" ? `✓ ${t.contact.copiedEmail}` : t.contact.copyEmail}
+            </button>
+          </div>
+
+          <div>
+            <div className="contact-field-label">{t.contact.findMe}</div>
+            <div className="contact-socials">
+              {socials.map((social) => {
+                const Icon = socialIcons[social.label];
+                return (
+                  <a
+                    key={social.label}
+                    href={social.href}
+                    target={social.href.startsWith("mailto:") ? undefined : "_blank"}
+                    rel={social.href.startsWith("mailto:") ? undefined : "noreferrer"}
+                    className="social-pill-link"
+                  >
+                    {Icon ? <Icon size={17} /> : social.label[0]}
+                    <span>{social.label}</span>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
         </motion.div>
+
+        <motion.aside
+          className="contact-panel spotlight-card"
+          onMouseMove={handleCardMouseMove}
+          variants={fadeInUp}
+          transition={{ duration: 0.45 }}
+        >
+          <div>
+            <p className="eyebrow section-label">{t.contact.panelTitle}</p>
+            <ul className="contact-panel-list">
+              {t.contact.panelItems.map((item) => (
+                <li key={item}>
+                  <span className="contact-panel-check" aria-hidden="true">
+                    ✓
+                  </span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="contact-location-box">
+            <span className="contact-field-label" style={{ marginBottom: 0 }}>
+              {t.contact.locationLabel}
+            </span>
+            <span className="contact-location-val">{t.contact.locationValue}</span>
+          </div>
+        </motion.aside>
       </motion.div>
     </Section>
   );
@@ -818,26 +1022,22 @@ function Footer() {
   return (
     <footer className="footer">
       <div className="footer-inner">
-        <p className="footer-text">
-          © {new Date().getFullYear()} Arethusa Aryandhana
-        </p>
-        <p className="footer-text" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>
-          {t.footer}
-        </p>
+        <p className="footer-text">© {new Date().getFullYear()} Arethusa Aryandhana</p>
+        <p className="footer-text footer-stack">{t.footer}</p>
         <div className="footer-links">
-          {socials.map((s) => {
-            const Icon = socialIcons[s.label];
+          {socials.map((social) => {
+            const Icon = socialIcons[social.label];
             return (
               <a
-                key={s.label}
-                href={s.href}
-                target={s.href.startsWith("mailto:") ? undefined : "_blank"}
-                rel={s.href.startsWith("mailto:") ? undefined : "noreferrer"}
+                key={social.label}
+                href={social.href}
+                target={social.href.startsWith("mailto:") ? undefined : "_blank"}
+                rel={social.href.startsWith("mailto:") ? undefined : "noreferrer"}
                 className="btn-icon"
-                style={{ width: 36, height: 36 }}
-                aria-label={s.label}
+                aria-label={social.label}
+                title={social.label}
               >
-                {Icon ? <Icon size={16} /> : s.label[0]}
+                {Icon ? <Icon size={16} /> : social.label[0]}
               </a>
             );
           })}
@@ -848,15 +1048,22 @@ function Footer() {
 }
 
 /* ═══════════════════════════════════════════════════════
-   MAIN PAGE
+   MAIN PAGE & ROOT
    ═══════════════════════════════════════════════════════ */
 
-function HomePage() {
+function HomePage({
+  theme,
+  onToggleTheme,
+}: {
+  theme: ThemeMode;
+  onToggleTheme: () => void;
+}) {
   const activeId = useActiveSection();
 
   return (
     <div className="app-shell">
-      <Navigation activeId={activeId} />
+      <AmbientBackdrop />
+      <Navigation activeId={activeId} theme={theme} onToggleTheme={onToggleTheme} />
 
       <main>
         <HeroSection />
@@ -872,13 +1079,11 @@ function HomePage() {
   );
 }
 
-/* ═══════════════════════════════════════════════════════
-   APP ROOT
-   ═══════════════════════════════════════════════════════ */
-
 function AppContent() {
   const reduced = useReducedMotion();
+  const { theme, toggleTheme } = useTheme();
   const [booted, setBooted] = useState(() => sessionStorage.getItem("aa-booted") === "true");
+
   const handleBootComplete = useCallback(() => {
     sessionStorage.setItem("aa-booted", "true");
     setBooted(true);
@@ -893,9 +1098,9 @@ function AppContent() {
           key="app"
           initial={reduced ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
         >
-          <HomePage />
+          <HomePage theme={theme} onToggleTheme={toggleTheme} />
         </motion.div>
       )}
     </AnimatePresence>

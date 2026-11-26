@@ -1,30 +1,53 @@
 <!doctype html>
-<html lang="en">
+<html lang="id" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Arethusa Aryandhana is a full-stack developer in Surabaya, Indonesia, working on web applications, APIs, and systems integration." />
+    <meta
+      name="description"
+      content="Arethusa Aryandhana — Full-Stack Developer di Surabaya, Indonesia. Membangun aplikasi web, API, middleware, dan integrasi sistem."
+    />
     <title>Arethusa Aryandhana — Full-Stack Developer</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
 
     <script>
       ;(function () {
-        var l = window.location
+        try {
+          var saved = window.localStorage.getItem("aa-theme");
+          var theme = saved === "light" || saved === "dark" ? saved : "dark";
+          document.documentElement.dataset.theme = theme;
+          if (theme === "dark") {
+            document.documentElement.classList.add("dark");
+          } else {
+            document.documentElement.classList.remove("dark");
+          }
+        } catch (e) {
+          document.documentElement.dataset.theme = "dark";
+          document.documentElement.classList.add("dark");
+        }
+      })();
+    </script>
+    <script>
+      ;(function () {
+        var l = window.location;
         if (l.search && l.search.startsWith("?/")) {
           var decoded = l.search
             .slice(2)
             .split("&")
             .map(function (s) {
-              return s.replace(/~and~/g, "&")
+              return s.replace(/~and~/g, "&");
             })
-            .join("?")
-          window.history.replaceState(null, null, l.pathname + decoded + l.hash)
+            .join("?");
+          window.history.replaceState(null, null, l.pathname + decoded + l.hash);
         }
-      })()
+      })();
     </script>
   </head>
 
