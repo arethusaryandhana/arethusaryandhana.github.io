@@ -407,16 +407,16 @@ h6 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 9px;
-  background: linear-gradient(135deg, var(--accent-strong), var(--accent-teal));
-  color: #ffffff;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.28);
+  filter: drop-shadow(0 4px 12px rgba(37, 99, 235, 0.24));
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.nav-logo:hover .nav-logo-mark {
+  transform: translateY(-1px);
+  filter: drop-shadow(0 6px 16px rgba(45, 212, 191, 0.28));
 }
 
 .nav-logo-text {
@@ -1719,6 +1719,12 @@ h6 {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 16px;
+}
+
+.footer-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .footer-text {

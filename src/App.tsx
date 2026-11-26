@@ -20,6 +20,7 @@ import {
 } from "./icons";
 import { techIcons, socialIcons } from "./iconMaps";
 import { LanguageProvider } from "./components/LanguageProvider";
+import { BrandLogo } from "./components/BrandLogo";
 import { useLanguage } from "./i18n";
 import { useTheme } from "./hooks/useTheme";
 import type { ThemeMode } from "./lib/theme";
@@ -446,7 +447,9 @@ function Navigation({
           type="button"
           aria-label={t.navigation.homeLabel}
         >
-          <span className="nav-logo-mark">AA</span>
+          <span className="nav-logo-mark">
+            <BrandLogo size={34} />
+          </span>
           <span className="nav-logo-text">Arethusa</span>
         </button>
 
@@ -1022,7 +1025,10 @@ function Footer() {
   return (
     <footer className="footer">
       <div className="footer-inner">
-        <p className="footer-text">© {new Date().getFullYear()} Arethusa Aryandhana</p>
+        <div className="footer-brand">
+          <BrandLogo size={24} />
+          <p className="footer-text">© {new Date().getFullYear()} Arethusa Aryandhana</p>
+        </div>
         <p className="footer-text footer-stack">{t.footer}</p>
         <div className="footer-links">
           {socials.map((social) => {
